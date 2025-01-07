@@ -2,6 +2,8 @@
 
 A Chrome extension that enhances the Capital One rewards offers page by adding mileage-based sorting functionality. Easily find the best mileage deals by sorting offers in ascending or descending order.
 
+![Extension](https://github.com/user-attachments/assets/999668a6-a2dc-415d-853c-0dfdf37d2cdc)
+
 ## Features
 
 - Sort offers by mileage value in ascending or descending order
