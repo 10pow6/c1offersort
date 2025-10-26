@@ -60,7 +60,10 @@ After making changes or pulling updates:
 
 ## Usage
 
-1. Navigate to `https://capitaloneoffers.com/c1-offers`
+1. Navigate to your Capital One offers page:
+   - Go to [myaccounts.capitalone.com/accountSummary](https://myaccounts.capitalone.com/accountSummary)
+   - Click "View all Offers"
+   - Legacy URL `https://capitaloneoffers.com/c1-offers` is deprecated but still supported (this URL is only accessible after clicking "View all Offers" from your account summary page)
 2. Click the extension icon in your toolbar
 3. Select your preferred sort order:
    - "Highest Miles" for descending order
