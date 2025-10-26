@@ -18,11 +18,44 @@ The default Capital One offers page doesn't provide sorting options for mileage 
 
 ## Installation
 
-1. Download the extension files
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" in the top right corner
-4. Click "Load unpacked" and select the extension directory
+### Build from Source
+
+**Prerequisites:**
+- Node.js (LTS version recommended) - Download from [nodejs.org](https://nodejs.org/)
+- Git (optional, for cloning the repository)
+
+**Build Steps:**
+1. Clone or download this repository
+2. Open a terminal in the project directory
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+4. Build the extension:
+   ```bash
+   npm run build
+   ```
+   This creates a `dist` folder with the compiled extension
+
+**Quick Update Script (Windows):**
+For easy updates, use the included `update.bat` file:
+```bash
+update.bat
+```
+This will automatically pull latest changes, install dependencies, and rebuild.
+
+**Loading into Chrome:**
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable "Developer mode" toggle in the top right corner
+3. Click "Load unpacked"
+4. Select the `dist` folder from the project directory
 5. The extension icon will appear in your Chrome toolbar
+
+**Updating the Extension:**
+After making changes or pulling updates:
+1. Run `npm run build` to rebuild
+2. Go to `chrome://extensions/`
+3. Click the refresh icon on the extension card
 
 ## Usage
 
