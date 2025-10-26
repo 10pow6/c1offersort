@@ -1,7 +1,10 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Coffee } from "lucide-react";
 
-const VALID_URL = "https://capitaloneoffers.com/c1-offers";
+const VALID_URLS = [
+  "https://capitaloneoffers.com/c1-offers",
+  "https://capitaloneoffers.com/feed"
+];
 const COFFEE_URL = "https://buymeacoffee.com/noritheshiba";
 
 const App: React.FC = () => {
@@ -71,9 +74,11 @@ const App: React.FC = () => {
     }
 
     async function sortByMiles() {
+      // Find the main container - works for both old and new layouts
       const mainContainer = document.querySelector(
-        ".grid.justify-center.gap-4.h-full.w-full"
+        ".grid.gap-4.h-full.w-full"
       ) as HTMLElement | null;
+
       if (!mainContainer) return;
 
       // Hide carousel
@@ -99,19 +104,21 @@ const App: React.FC = () => {
       ];
 
       // Calculate mileage for each tile
-      const tilesWithMiles = allTiles.map((tile) => {
-        const parent = tile.parentElement as HTMLElement | null;
-        const mileageDiv =
-          tile.querySelector('div[style*="color"]') ||
-          tile.querySelector(
-            'div[style*="background-color: rgb(37, 129, 14)"]'
-          );
+      const tilesWithMiles = allTiles
+        .map((tile) => {
+          const parent = tile.parentElement as HTMLElement | null;
 
-        const mileageText = mileageDiv?.textContent || "0 miles";
-        const mileageValue = parseMileageValue(mileageText);
+          // Find the mileage div - it's in the bottom section with specific styling
+          const mileageDiv =
+            tile.querySelector('div[style*="border-top"][style*="font-semibold"]') ||
+            tile.querySelector('div[style*="color: rgb(37, 129, 14)"]');
 
-        return { element: parent, mileage: mileageValue };
-      });
+          const mileageText = mileageDiv?.textContent || "0 miles";
+          const mileageValue = parseMileageValue(mileageText);
+
+          return { element: parent, mileage: mileageValue };
+        })
+        .filter((item) => item.element !== null); // Filter out tiles without parents
 
       // Sort ascending or descending based on user selection
       tilesWithMiles
@@ -119,9 +126,9 @@ const App: React.FC = () => {
           isDescending ? b.mileage - a.mileage : a.mileage - b.mileage
         )
         .forEach((item, index) => {
-          if (item.element) {
-            item.element.style.order = String(index);
-          }
+          // Clear grid-area (used in /feed layout) to allow order to work
+          item.element!.style.gridArea = "auto";
+          item.element!.style.order = String(index);
         });
     }
 
@@ -177,7 +184,7 @@ const App: React.FC = () => {
     setSortOrder(e.target.value as "desc" | "asc");
   };
 
-  const isValidUrl = currentUrl.startsWith(VALID_URL);
+  const isValidUrl = VALID_URLS.some(url => currentUrl.startsWith(url));
 
   // ---------------------------------------------
   // UI Render
@@ -366,7 +373,7 @@ const App: React.FC = () => {
             This extension only works on the Capital One Offers page.
           </div>
           <button
-            onClick={() => window.open(VALID_URL, "_blank")}
+            onClick={() => window.open(VALID_URLS[0], "_blank")}
             style={{
               marginTop: "16px",
               padding: "8px 16px",
