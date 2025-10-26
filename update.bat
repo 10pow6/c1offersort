@@ -4,11 +4,11 @@ git pull
 
 echo.
 echo Installing dependencies...
-npm install
+yarn install
 
 echo.
 echo Building extension...
-npm run build
+yarn build
 
 echo.
 echo Done! Extension is ready in the dist folder.

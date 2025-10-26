@@ -22,6 +22,7 @@ The default Capital One offers page doesn't provide sorting options for mileage 
 
 **Prerequisites:**
 - Node.js (LTS version recommended) - Download from [nodejs.org](https://nodejs.org/)
+- Yarn package manager - Install with: `npm install -g yarn`
 - Git (optional, for cloning the repository)
 
 **Build Steps:**
@@ -29,11 +30,11 @@ The default Capital One offers page doesn't provide sorting options for mileage 
 2. Open a terminal in the project directory
 3. Install dependencies:
    ```bash
-   npm install
+   yarn install
    ```
 4. Build the extension:
    ```bash
-   npm run build
+   yarn build
    ```
    This creates a `dist` folder with the compiled extension
 
@@ -53,7 +54,7 @@ This will automatically pull latest changes, install dependencies, and rebuild.
 
 **Updating the Extension:**
 After making changes or pulling updates:
-1. Run `npm run build` to rebuild
+1. Run `yarn build` to rebuild
 2. Go to `chrome://extensions/`
 3. Click the refresh icon on the extension card
 

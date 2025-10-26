@@ -2,6 +2,7 @@
   "name": "react-chrome-extension",
   "version": "1.0.0",
   "description": "A modern Chrome extension built with React",
+  "type": "module",
   "scripts": {
     "start": "vite",
     "build": "vite build",
