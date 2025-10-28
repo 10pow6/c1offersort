@@ -1,0 +1,39 @@
+.sort-criteria-selector {
+  border: 1px solid var(--color-yellow);
+  padding: 12px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sort-criteria-selector legend {
+  font-weight: bold;
+  color: var(--color-yellow);
+  padding: 0 4px;
+}
+
+.sort-criteria-selector label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.sort-criteria-selector label:hover {
+  background-color: rgba(255, 221, 0, 0.1);
+}
+
+.sort-criteria-selector input[type="radio"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-yellow);
+}
+
+.sort-criteria-selector span {
+  color: var(--color-white);
+}

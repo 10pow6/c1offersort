@@ -1,0 +1,53 @@
+.error-message {
+  background-color: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  animation: error-slide-in 0.2s ease-out;
+}
+
+.error-message-icon {
+  color: #ef4444;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.error-message-text {
+  color: #fee2e2;
+  font-size: 12px;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.error-message-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.error-message-close:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+@keyframes error-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

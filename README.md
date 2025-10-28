@@ -1,110 +1,159 @@
-# Capital One Offers Sorter
+# C1 Offers Sorter
 
-A Chrome extension that enhances the Capital One rewards offers page by adding mileage-based sorting functionality. Easily find the best mileage deals by sorting offers in ascending or descending order.
+> Enhance your Capital One rewards experience with intelligent sorting and favorites management
 
-![Extension](https://github.com/user-attachments/assets/999668a6-a2dc-415d-853c-0dfdf37d2cdc)
+![Extension Screenshot](docs/images/extension-screenshot.png)
 
-## Features
+## ✨ Features
 
-- Sort offers by mileage value in ascending or descending order
-- Automatically handles different mileage formats (e.g., "2X miles", "Up to 60,000 miles")
-- Loads all available offers before sorting (handles "View More Offers" pagination)
-- Maintains the original page styling while reorganizing offers
-- Only activates on the official Capital One offers page for security
+**Smart Sorting**
 
-## Why Use This Extension?
+- Sort offers by highest or lowest mileage rewards
+- Sort alphabetically by merchant name
+- Handles all mileage formats (2X miles, 60,000 miles, etc.)
+- Automatically loads all available offers before sorting
 
-The default Capital One offers page doesn't provide sorting options for mileage rewards. This extension fills that gap by allowing you to quickly find the highest or lowest mileage offers, making it easier to maximize your rewards based on your preferences.
+**Favorites Management**
 
-## Installation
+- Mark your favorite offers with a star
+- View all favorites in the extension popup
+- Filter to show only favorited offers on the page
+- Favorites persist across browsing sessions
 
-### Build from Source
+**Security**
 
-**Prerequisites:**
-- Node.js (LTS version recommended) - Download from [nodejs.org](https://nodejs.org/)
-- Yarn package manager - Install with: `npm install -g yarn`
-- Git (optional, for cloning the repository)
+- All data stored locally—nothing sent to external servers
+- Open source and transparent
 
-**Build Steps:**
-1. Clone or download this repository
-2. Open a terminal in the project directory
-3. Install dependencies:
-   ```bash
-   yarn install
-   ```
-4. Build the extension:
-   ```bash
-   yarn build
-   ```
-   This creates a `dist` folder with the compiled extension
+## 🚀 Quick Start
 
-**Quick Update Script (Windows):**
-For easy updates, use the included `update.bat` file:
-```bash
-update.bat
-```
-This will automatically pull latest changes, install dependencies, and rebuild.
+1. **Install the Extension**
 
-**Loading into Chrome:**
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" toggle in the top right corner
-3. Click "Load unpacked"
-4. Select the `dist` folder from the project directory
-5. The extension icon will appear in your Chrome toolbar
+   - Install from the [Chrome Web Store](https://chrome.google.com/webstore) (coming soon)
+   - The extension icon will appear in your Chrome toolbar
 
-**Updating the Extension:**
-After making changes or pulling updates:
-1. Run `yarn build` to rebuild
-2. Go to `chrome://extensions/`
-3. Click the refresh icon on the extension card
-
-## Usage
-
-1. Navigate to your Capital One offers page:
-   - Go to [myaccounts.capitalone.com/accountSummary](https://myaccounts.capitalone.com/accountSummary)
+2. **Use the Extension**
+   - Visit your [Capital One account](https://myaccounts.capitalone.com/accountSummary)
    - Click "View all Offers"
-   - Legacy URL `https://capitaloneoffers.com/c1-offers` is deprecated but still supported (this URL is only accessible after clicking "View all Offers" from your account summary page)
-2. Click the extension icon in your toolbar
-3. Select your preferred sort order:
-   - "Highest Miles" for descending order
-   - "Lowest Miles" for ascending order
+   - Click the extension icon in your toolbar
+   - Choose your sorting preference and click "Sort Offers"
+
+That's it! Your offers will be reorganized instantly.
+
+## 📦 Installation
+
+### From Chrome Web Store (Recommended)
+
+The extension will be available on the Chrome Web Store soon. Once published, simply click "Add to Chrome" to install.
+
+### For Developers
+
+If you want to build from source or contribute to the project, see the [Development Guide](docs/DEVELOPMENT.md) for detailed instructions on building and running the extension locally.
+
+## 🎯 Usage
+
+### Sorting Offers
+
+1. Navigate to the Capital One offers page:
+
+   - Go to [myaccounts.capitalone.com](https://myaccounts.capitalone.com/accountSummary)
+   - Click "View all Offers"
+
+2. Click the extension icon in your Chrome toolbar
+
+3. Choose your sorting criteria:
+
+   - **Sort by Mileage**: Highest or Lowest miles
+   - **Sort Alphabetically**: A-Z or Z-A by merchant name
+
 4. Click "Sort Offers"
-5. Wait briefly if there are multiple pages of offers to load
-6. Offers will be automatically reorganized based on your selection
 
-## Technical Details
+5. The extension automatically loads all pages of offers and reorganizes them based on your selection
 
-### Implementation Features
+### Managing Favorites
 
-- Built with React and TypeScript for reliability and maintainability
-- Uses DOM manipulation for sorting without affecting the underlying data
-- Handles multiple mileage formats through regex pattern matching
-- Implements graceful loading states and error handling
-- Responsive design that maintains the original page layout
-- Works with Chrome version 88 and newer
+1. **Add Favorites**: Click the star icon on any offer to mark it as a favorite
+
+2. **View Favorites**: Click the extension icon to see your favorites list in the popup
+
+3. **Remove Favorites**: Click the X button next to any favorite in the popup, or click the star again on the offer
+
+4. **Filter by Favorites**: Click "Show Favorites Only" to display only your starred offers on the page
+
+## 🔒 Privacy & Security
+
+Your privacy matters. This extension:
+
+- ✅ Stores all data **locally** in your browser only
+- ✅ **Never transmits** data to external servers
+- ✅ Only activates on official Capital One domains
+- ✅ Uses minimal permissions (activeTab, scripting, storage)
+- ✅ Open source—review the code anytime
+
+Read the full [Privacy Policy](docs/PRIVACY.md).
 
 ### Required Permissions
 
-This extension requires two permissions:
+| Permission  | Why We Need It                                                  |
+| ----------- | --------------------------------------------------------------- |
+| `activeTab` | Access the Capital One offers page when you click the extension |
+| `scripting` | Inject sorting and favorites functionality into the page        |
+| `storage`   | Save your favorite offers locally in your browser               |
 
-- `activeTab`: Needed to interact with the Capital One offers page when you're actively viewing it. This permission is only active when you're on the offers page, ensuring privacy and security.
-- `scripting`: Required to inject the sorting functionality into the page. This allows the extension to read offer details and reorder them while maintaining the page's security. The extension only uses this permission on the Capital One offers website.
+## 🛠️ Technical Details
 
-### Security Features
+- **Framework**: React 18 + TypeScript 5
+- **Build Tool**: Vite 5
+- **Extension API**: Chrome Manifest V3
+- **Browser Support**: Chrome 109+
 
-- Only activates on the official Capital One offers URL
-- No data collection or external communications
-- All sorting happens locally in your browser
-- No modification of offer data, only display order
+### Architecture
 
-## Support
+- React component architecture with custom hooks and service layers
+- Type-safe Chrome API wrappers with TypeScript
+- Comprehensive test coverage with Vitest
+- Resilient DOM selectors for Capital One's page structure
+- MutationObserver-based pagination detection
 
-If you encounter any issues or have suggestions for improvements, please open an issue in the GitHub repository.
+## 🤝 Contributing
 
-## Contributing
+Contributions are welcome! Whether you're fixing bugs, adding features, or improving documentation:
 
-Contributions are welcome! Feel free to submit pull requests or suggest new features.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes and add tests if applicable
+4. Run tests: `yarn test:run`
+5. Build and test the extension: `yarn build`
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to your fork (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
-## Buy Me a Coffee
+### Development Commands
 
-If you find this extension helpful, consider supporting the developer by buying them a coffee! Look for the coffee button in the extension popup.
+```bash
+yarn start          # Dev server with hot reload
+yarn build          # Production build
+yarn test           # Run tests in watch mode
+yarn test:run       # Run tests once
+yarn test:ui        # Run tests with UI
+```
+
+## 📝 License
+
+This project is open source and available under the MIT License.
+
+## 💬 Support
+
+Having issues or suggestions?
+
+- **Bug Reports**: [Open an issue](https://github.com/noritheshibadev/c1offersort/issues)
+- **Feature Requests**: [Start a discussion](https://github.com/noritheshibadev/c1offersort/discussions)
+- **Questions**: Check existing issues or open a new one
+
+## ☕ Support the Developer
+
+If you find this extension helpful, consider [buying Nori a treat](https://buymeacoffee.com/shibadev)!
+
+---
+
+**Note**: This extension is not affiliated with or endorsed by Capital One. It's an independent tool created to enhance the user experience of Capital One rewards offers.

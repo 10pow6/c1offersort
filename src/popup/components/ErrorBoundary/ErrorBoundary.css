@@ -1,0 +1,44 @@
+.error-boundary {
+  background-color: var(--color-background, #013d5b);
+  min-height: 100vh;
+  color: var(--color-white, white);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-content {
+  text-align: center;
+  max-width: 300px;
+}
+
+.error-content h2 {
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+}
+
+.error-content p {
+  margin-bottom: 16px;
+  opacity: 0.9;
+}
+
+.error-content details {
+  text-align: left;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+.error-content summary {
+  cursor: pointer;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.error-content pre {
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

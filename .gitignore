@@ -33,10 +33,18 @@ yarn-error.log*
 *.crx
 *.pem
 *.zip
+dist.zip
+web-store-upload.zip
+releases/
 
 # TypeScript
 *.tsbuildinfo
 
+# Source maps
+*.map
+
 # Misc
-.DS_Store
 Thumbs.db
+
+# Internal documentation
+.claude/CLAUDE.md
