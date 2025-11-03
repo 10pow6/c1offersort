@@ -1,0 +1,34 @@
+.status-message {
+  border-radius: 3px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.status-message.success {
+  background-color: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.status-message.error {
+  background-color: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.status-message.progress {
+  background-color: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.status-message strong {
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.status-details {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 2px;
+}

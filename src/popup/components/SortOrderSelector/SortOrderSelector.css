@@ -1,0 +1,30 @@
+.sort-order-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sort-order-selector legend {
+  padding: 0;
+  margin-right: 4px;
+}
+
+.sort-order-selector label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.sort-order-selector label span {
+  margin-left: 4px;
+  display: inline-block;
+  min-width: 100px;
+}
+
+.sort-order-selector input[type="radio"] {
+  cursor: pointer;
+}
