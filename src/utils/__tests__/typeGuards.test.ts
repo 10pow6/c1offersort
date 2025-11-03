@@ -34,12 +34,6 @@ describe("typeGuards", () => {
   });
 
   describe("isValidCapitalOneUrl - Issue #2 Security Tests", () => {
-    it("returns true for valid c1-offers URL", () => {
-      expect(
-        isValidCapitalOneUrl("https://capitaloneoffers.com/c1-offers")
-      ).toBe(true);
-    });
-
     it("returns true for valid feed URL", () => {
       expect(isValidCapitalOneUrl("https://capitaloneoffers.com/feed")).toBe(
         true
@@ -47,9 +41,6 @@ describe("typeGuards", () => {
     });
 
     it("returns true for valid URLs with paths", () => {
-      expect(
-        isValidCapitalOneUrl("https://capitaloneoffers.com/c1-offers/some-path")
-      ).toBe(true);
       expect(
         isValidCapitalOneUrl("https://capitaloneoffers.com/feed?param=value")
       ).toBe(true);
@@ -82,7 +73,7 @@ describe("typeGuards", () => {
 
     it("is case-sensitive for security", () => {
       expect(
-        isValidCapitalOneUrl("https://capitaloneoffers.com/C1-OFFERS")
+        isValidCapitalOneUrl("https://capitaloneoffers.com/FEED")
       ).toBe(false);
     });
 

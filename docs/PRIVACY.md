@@ -58,7 +58,7 @@ The extension requests the following Chrome permissions:
 
 ### scripting
 - **Purpose**: Required to inject sorting and favorites functionality into the Capital One offers page
-- **Scope**: Only used on Capital One offers pages (`https://capitaloneoffers.com/c1-offers` and `https://capitaloneoffers.com/feed`)
+- **Scope**: Only used on Capital One offers pages (`https://capitaloneoffers.com/feed`)
 
 ### storage
 - **Purpose**: Store your favorites and preferences locally in your browser

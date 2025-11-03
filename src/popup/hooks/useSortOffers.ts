@@ -105,7 +105,7 @@ export function useSortOffers(): UseSortOffersResult {
           success: false,
           tilesProcessed: 0,
           pagesLoaded: 0,
-          error: "Not on a valid Capital One offers page. Please navigate to capitaloneoffers.com/feed or /c1-offers.",
+          error: "Not on a valid Capital One offers page. Please navigate to capitaloneoffers.com/feed.",
         };
         setLastResult(errorResult);
         return;

@@ -9,7 +9,6 @@ import type { PaginationConfig, Selectors, Colors } from "../types";
  * Valid Capital One offers page URLs where the extension is allowed to operate.
  */
 export const VALID_URLS = [
-  "https://capitaloneoffers.com/c1-offers",
   "https://capitaloneoffers.com/feed",
 ] as const;
 
