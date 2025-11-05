@@ -11,8 +11,9 @@ import { FavoritesList } from "./components/FavoritesList";
 import { BuyMeCoffee } from "./components/BuyMeCoffee";
 import { HelpButton } from "./components/HelpButton";
 import ErrorMessage from "./components/ErrorMessage";
-import { COLORS } from "../utils/constants";
-import { isValidCapitalOneUrl } from "../utils/typeGuards";
+import { FeatureErrorBoundary } from "./components/FeatureErrorBoundary";
+import { isValidCapitalOneUrl } from "@/utils/typeGuards";
+import { COLORS } from "@/utils/constants";
 import { injectFavoritesInActiveTab } from "./services/favoritesInjection";
 import { applyFavoritesFilterInActiveTab } from "./services/applyFavoritesFilter";
 import { removeFavoritesStarsInActiveTab } from "./services/removeFavoritesStars";
@@ -31,6 +32,8 @@ import type { SortCriteria, SortOrder } from "../types";
  * - Real-time progress updates during sorting and pagination
  */
 const App: React.FC = () => {
+  console.log('[App] Component mounted');
+
   const currentUrl = useCurrentTab();
   const {
     isLoading,
@@ -40,6 +43,8 @@ const App: React.FC = () => {
     lastResult,
     progressUpdate,
   } = useSortOffers();
+
+  console.log('[App] Render - isLoading:', isLoading, 'progressUpdate:', progressUpdate);
   const { favorites, favoritesCount, refreshFavorites } = useFavorites();
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(false);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
@@ -55,6 +60,30 @@ const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isValidUrl = useMemo(() => isValidCapitalOneUrl(currentUrl), [currentUrl]);
+
+  // Query content script for filter progress on mount
+  useEffect(() => {
+    async function queryFilterProgress() {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tabs[0]?.id) return;
+
+        const response = await chrome.tabs.sendMessage(tabs[0].id, {
+          type: 'GET_FILTER_PROGRESS'
+        });
+
+        if (response && response.isActive) {
+          setIsFilterLoading(true);
+          if (response.progress) {
+            setLoadAllProgress(response.progress);
+          }
+        }
+      } catch (error) {
+        console.log('[App] No active filter operation or failed to query:', error);
+      }
+    }
+    queryFilterProgress();
+  }, []);
 
   useEffect(() => {
     async function loadEnabledState() {
@@ -74,6 +103,11 @@ const App: React.FC = () => {
   }, [isValidUrl]);
 
   useEffect(() => {
+    if (!chrome?.runtime?.onMessage) {
+      console.error('[App] chrome.runtime.onMessage not available');
+      return;
+    }
+
     const messageListener = (
       message: unknown,
       _sender: chrome.runtime.MessageSender,
@@ -91,7 +125,11 @@ const App: React.FC = () => {
     };
 
     chrome.runtime.onMessage.addListener(messageListener);
-    return () => chrome.runtime.onMessage.removeListener(messageListener);
+    return () => {
+      if (chrome?.runtime?.onMessage) {
+        chrome.runtime.onMessage.removeListener(messageListener);
+      }
+    };
   }, []);
 
   const handleCriteriaChange = useCallback((criteria: SortCriteria) => {
@@ -145,7 +183,7 @@ const App: React.FC = () => {
     setErrorMessage(null);
     setShowFavoritesOnly(newShowFavoritesOnly);
 
-    try {
+    try{
       const result = await applyFavoritesFilterInActiveTab(
         newShowFavoritesOnly
       );
@@ -205,63 +243,66 @@ const App: React.FC = () => {
           minHeight: 0,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-            marginTop: "16px",
-            flexShrink: 0,
-          }}
-        >
-          <SortCriteriaSelector
-            sortCriteria={sortConfig.criteria}
-            onChange={handleCriteriaChange}
-          />
-          <SortOrderSelector
-            sortOrder={sortConfig.order}
-            sortCriteria={sortConfig.criteria}
-            onChange={handleOrderChange}
-          />
-          <SortButton
-            onClick={handleSort}
-            isLoading={isLoading}
-            disabled={!isValidUrl}
-          />
-          {errorMessage && (
-            <ErrorMessage
-              message={errorMessage}
-              onDismiss={() => setErrorMessage(null)}
-            />
-          )}
-        </div>
-
-        <div
-          style={{
-            marginTop: "12px",
-            flex: favoritesListExpanded ? 1 : "0 0 auto",
-            overflow: "visible",
-            display: "flex",
-            flexDirection: "column",
-            paddingBottom: "12px",
-            minHeight: 0,
-            position: "relative",
-          }}
-        >
+        <FeatureErrorBoundary feature="Sorting">
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               gap: "12px",
-              padding: "14px",
-              backgroundColor: "rgba(255, 255, 255, 0.03)",
-              borderRadius: "6px",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              flex: favoritesListExpanded ? 1 : "0 0 auto",
-              minHeight: 0,
-              overflow: "visible",
+              marginTop: "16px",
+              flexShrink: 0,
             }}
           >
+            <SortCriteriaSelector
+              sortCriteria={sortConfig.criteria}
+              onChange={handleCriteriaChange}
+            />
+            <SortOrderSelector
+              sortOrder={sortConfig.order}
+              sortCriteria={sortConfig.criteria}
+              onChange={handleOrderChange}
+            />
+            <SortButton
+              onClick={handleSort}
+              isLoading={isLoading}
+              disabled={!isValidUrl}
+            />
+            {errorMessage && (
+              <ErrorMessage
+                message={errorMessage}
+                onDismiss={() => setErrorMessage(null)}
+              />
+            )}
+          </div>
+        </FeatureErrorBoundary>
+
+        <FeatureErrorBoundary feature="Favorites">
+          <div
+            style={{
+              marginTop: "12px",
+              flex: favoritesListExpanded ? 1 : "0 0 auto",
+              overflow: "visible",
+              display: "flex",
+              flexDirection: "column",
+              paddingBottom: "12px",
+              minHeight: 0,
+              position: "relative",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                padding: "14px",
+                backgroundColor: "rgba(255, 255, 255, 0.03)",
+                borderRadius: "6px",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                flex: favoritesListExpanded ? 1 : "0 0 auto",
+                minHeight: 0,
+                overflow: "visible",
+              }}
+            >
             <div
               style={{
                 display: "flex",
@@ -537,6 +578,7 @@ const App: React.FC = () => {
             )}
           </div>
         </div>
+        </FeatureErrorBoundary>
       </div>
 
       <div

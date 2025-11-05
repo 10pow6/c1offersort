@@ -3,9 +3,10 @@ import {
   extractMerchantName,
   parseMileageValue,
   findMainContainer,
-} from '../../../shared/domHelpers';
-import type { SortResult } from '../../../types';
+} from '@/shared/domHelpers';
+import type { SortResult } from '@/types';
 import { loadAllTiles } from '../pagination';
+import { isContextInvalidatedError } from '@/utils/contextCheck';
 
 interface TileData {
   element: HTMLElement;
@@ -22,6 +23,7 @@ interface TileData {
  * @param fullyPaginated - Reference to track if pagination is complete
  * @param processedTiles - Set to track which tiles have been processed
  * @param reinjectStarsCallback - Callback to re-inject stars after sorting
+ * @param progressState - In-memory progress tracking state (optional for backwards compatibility)
  * @returns Result object with success status, tiles processed count, and any errors
  */
 export async function executeSorting(
@@ -29,8 +31,21 @@ export async function executeSorting(
   sortOrder: string,
   fullyPaginated: { value: boolean },
   processedTiles: Set<string>,
-  reinjectStarsCallback: () => Promise<void>
+  reinjectStarsCallback: () => Promise<void>,
+  progressState?: {
+    sort: {
+      isActive: boolean;
+      progress: {
+        type: "pagination" | "sorting";
+        offersLoaded?: number;
+        pagesLoaded?: number;
+        totalOffers?: number;
+      } | null;
+    };
+  }
 ): Promise<SortResult> {
+  console.log('[Sorting] executeSorting called with criteria:', sortCriteria, 'order:', sortOrder);
+
   const mainContainer = findMainContainer();
 
   if (!mainContainer) {
@@ -47,19 +62,27 @@ export async function executeSorting(
     carouselElement.style.display = "none";
   }
 
+  console.log('[Sorting] Starting pagination...');
   const pagesLoaded = await loadAllTiles(fullyPaginated);
+  console.log('[Sorting] Pagination complete, pages loaded:', pagesLoaded);
+
   const additionalOffersHeader = Array.from(document.querySelectorAll("h2")).find(
     h => h.textContent?.includes("Additional Offers")
   );
   if (additionalOffersHeader) {
+    console.log('[Sorting] Scrolling to Additional Offers header');
     additionalOffersHeader.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  console.log('[Sorting] Setting grid properties on main container');
   mainContainer.style.setProperty("display", "grid", "important");
   mainContainer.style.gridTemplateAreas = "none";
   mainContainer.style.gridAutoFlow = "row";
 
+  console.log('[Sorting] Querying for tiles...');
   const allTilesRaw = Array.from(mainContainer.querySelectorAll('[data-testid^="feed-tile-"]'));
+  console.log('[Sorting] Found', allTilesRaw.length, 'raw tiles');
+
   const allTiles = allTilesRaw.filter((tile) => {
     const testId = tile.getAttribute('data-testid') || '';
     const isCarousel = testId.includes('carousel');
@@ -69,7 +92,10 @@ export async function executeSorting(
     return !isCarousel;
   }) as HTMLElement[];
 
+  console.log('[Sorting] Filtered to', allTiles.length, 'non-carousel tiles');
+
   if (allTiles.length === 0) {
+    console.error('[Sorting] No tiles found!');
     return {
       success: false,
       tilesProcessed: 0,
@@ -92,13 +118,22 @@ export async function executeSorting(
     })
     .filter((item) => item.element !== null);
 
+  // Update in-memory progress state
+  if (progressState) {
+    progressState.sort.progress = {
+      type: 'sorting',
+      totalOffers: tilesWithData.length,
+    };
+  }
+
   try {
     chrome.runtime.sendMessage({
       type: "SORTING_START",
       totalOffers: tilesWithData.length,
     }).catch(() => {});
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+    if (isContextInvalidatedError(error)) {
+      console.warn('[Sorting] Extension context invalidated during sorting start event');
       return {
         success: false,
         tilesProcessed: 0,
@@ -110,6 +145,7 @@ export async function executeSorting(
 
   const isDescending = sortOrder === "desc";
 
+  console.log('[Sorting] Sorting', tilesWithData.length, 'tiles by', sortCriteria, isDescending ? 'descending' : 'ascending');
   const sortedTiles = tilesWithData.sort((a, b) => {
     if (sortCriteria === "alphabetical") {
       const nameA = a.merchantName.toLowerCase();
@@ -121,6 +157,7 @@ export async function executeSorting(
     }
   });
 
+  console.log('[Sorting] Applying order styles to tiles...');
   sortedTiles.forEach((item, index) => {
     if (!item.element) {
       return;
@@ -129,6 +166,8 @@ export async function executeSorting(
     item.element.style.setProperty("grid-area", "auto", "important");
     item.element.style.setProperty("order", String(index), "important");
   });
+
+  console.log('[Sorting] Order styles applied successfully');
 
   processedTiles.clear();
   await reinjectStarsCallback();

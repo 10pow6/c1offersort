@@ -1,38 +1,7 @@
 import { describe, it, expect } from "vitest";
-import {
-  isHTMLElement,
-  isHTMLButtonElement,
-  isValidCapitalOneUrl,
-} from "../typeGuards";
+import { isValidCapitalOneUrl } from "../typeGuards";
 
 describe("typeGuards", () => {
-  describe("isHTMLElement", () => {
-    it("returns true for HTMLElement", () => {
-      const div = document.createElement("div");
-      expect(isHTMLElement(div)).toBe(true);
-    });
-
-    it("returns false for null", () => {
-      expect(isHTMLElement(null)).toBe(false);
-    });
-  });
-
-  describe("isHTMLButtonElement", () => {
-    it("returns true for HTMLButtonElement", () => {
-      const button = document.createElement("button");
-      expect(isHTMLButtonElement(button)).toBe(true);
-    });
-
-    it("returns false for non-button element", () => {
-      const div = document.createElement("div");
-      expect(isHTMLButtonElement(div)).toBe(false);
-    });
-
-    it("returns false for null", () => {
-      expect(isHTMLButtonElement(null)).toBe(false);
-    });
-  });
-
   describe("isValidCapitalOneUrl - Issue #2 Security Tests", () => {
     it("returns true for valid feed URL", () => {
       expect(isValidCapitalOneUrl("https://capitaloneoffers.com/feed")).toBe(

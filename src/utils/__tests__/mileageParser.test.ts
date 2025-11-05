@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMileageValue } from "../mileageParser";
+import { parseMileageValue } from "../../shared/domHelpers";
 
 describe("parseMileageValue", () => {
   describe("multiplier format", () => {

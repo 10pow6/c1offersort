@@ -44,6 +44,30 @@ export function useSortOffers(): UseSortOffersResult {
   const [progressUpdate, setProgressUpdate] = useState<ProgressUpdate | null>(null);
   const lastUpdateTimeRef = useRef<number>(0);
 
+  // Query content script for progress on mount
+  useEffect(() => {
+    async function queryProgress() {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tabs[0]?.id) return;
+
+        const response = await chrome.tabs.sendMessage(tabs[0].id, {
+          type: 'GET_SORT_PROGRESS'
+        });
+
+        if (response && response.isActive) {
+          setIsLoading(true);
+          if (response.progress) {
+            setProgressUpdate(response.progress);
+          }
+        }
+      } catch (error) {
+        console.log('[useSortOffers] No active sort operation or failed to query:', error);
+      }
+    }
+    queryProgress();
+  }, []);
+
   const messageListener = useCallback((
     message: unknown,
     _sender: chrome.runtime.MessageSender,
@@ -69,6 +93,7 @@ export function useSortOffers(): UseSortOffersResult {
         return;
       }
 
+      console.log('[useSortOffers] Received pagination progress:', msg.offersLoaded, 'offers,', msg.pagesLoaded, 'pages');
       lastUpdateTimeRef.current = now;
       setProgressUpdate({
         type: "pagination",
@@ -80,27 +105,47 @@ export function useSortOffers(): UseSortOffersResult {
         return;
       }
 
+      console.log('[useSortOffers] Received sorting start:', msg.totalOffers, 'offers');
       setProgressUpdate({
         type: "sorting",
         totalOffers: msg.totalOffers,
       });
+    } else if (msg.type === "SORT_COMPLETE") {
+      console.log('[useSortOffers] Received sort completion:', 'result' in msg ? msg.result : undefined);
+      setIsLoading(false);
+      setProgressUpdate(null);
+      if ('result' in msg && msg.result && typeof msg.result === 'object' && 'success' in msg.result) {
+        setLastResult(msg.result as SortResult);
+      }
     }
   }, []);
 
   useEffect(() => {
+    if (!chrome?.runtime?.onMessage) {
+      console.error('[useSortOffers] chrome.runtime.onMessage not available');
+      return;
+    }
+
     chrome.runtime.onMessage.addListener(messageListener);
-    return () => chrome.runtime.onMessage.removeListener(messageListener);
+    return () => {
+      if (chrome?.runtime?.onMessage) {
+        chrome.runtime.onMessage.removeListener(messageListener);
+      }
+    };
   }, [messageListener]);
 
   const handleSort = useCallback(async () => {
+    console.log('[useSortOffers] handleSort called with config:', sortConfig);
     setIsLoading(true);
     setLastResult(null);
     setProgressUpdate(null);
 
     try {
       const currentTab = await getCurrentTab();
+      console.log('[useSortOffers] Current tab:', currentTab?.url);
 
       if (!isValidCapitalOneUrl(currentTab?.url)) {
+        console.log('[useSortOffers] Invalid URL, not sorting');
         const errorResult: SortResult = {
           success: false,
           tilesProcessed: 0,
@@ -111,7 +156,9 @@ export function useSortOffers(): UseSortOffersResult {
         return;
       }
 
+      console.log('[useSortOffers] Executing sort in active tab...');
       const result = await executeSortInActiveTab(sortConfig);
+      console.log('[useSortOffers] Sort result:', result);
       setLastResult(result);
 
       if (!result.success) {

@@ -1,53 +1,49 @@
-/**
- * DOM Helper Functions
- * Shared utilities for extracting data from Capital One offer tiles.
- */
 const MILEAGE_PATTERN = /\d+[,\d]*\s*(?:X\s*)?miles/i;
 const MULTIPLIER_PATTERN = /(\d+)X\s+miles/i;
 const MILES_PATTERN = /(?:Up to )?([0-9,]+)\s+miles/i;
 const MAX_BASE64_LENGTH = 10000;
 const VALID_TLD_PATTERN = /^[a-z0-9.-]+\.[a-z]{2,}$/i;
 
-/**
- * Checks if a tile is a skeleton tile (loading placeholder)
- */
 export function isSkeletonTile(tile: Element): boolean {
   const testId = tile.getAttribute('data-testid') || '';
   return testId.includes('skeleton');
 }
 
-/**
- * Checks if a tile is a carousel tile
- */
 export function isCarouselTile(tile: Element): boolean {
   const testId = tile.getAttribute('data-testid') || '';
   return testId.includes('carousel');
 }
 
-/**
- * Checks if a tile should be excluded from processing
- */
 export function shouldExcludeTile(tile: Element): boolean {
   return isSkeletonTile(tile) || isCarouselTile(tile);
 }
 
-/**
- * Counts only real tiles (excluding skeletons and carousels)
- */
 export function countRealTiles(): number {
   const allTiles = document.querySelectorAll('[data-testid^="feed-tile-"]');
   let count = 0;
+  let skeletonCount = 0;
+  let carouselCount = 0;
+
   for (const tile of allTiles) {
-    if (!shouldExcludeTile(tile)) {
+    if (isSkeletonTile(tile)) {
+      skeletonCount++;
+    } else if (isCarouselTile(tile)) {
+      carouselCount++;
+    } else {
       count++;
     }
   }
+
+  console.log('[DOMHelpers] countRealTiles:', {
+    totalTiles: allTiles.length,
+    realTiles: count,
+    skeletonTiles: skeletonCount,
+    carouselTiles: carouselCount
+  });
+
   return count;
 }
 
-/**
- * Validates merchantTLD format for security
- */
 export function isValidMerchantTLD(tld: unknown): tld is string {
   if (typeof tld !== 'string') return false;
   if (tld.length === 0 || tld.length > 100) return false;
@@ -57,9 +53,6 @@ export function isValidMerchantTLD(tld: unknown): tld is string {
   return VALID_TLD_PATTERN.test(tld);
 }
 
-/**
- * Extracts merchantTLD from tile's data-testid attribute with security validation
- */
 export function extractMerchantTLDFromDataTestId(tile: HTMLElement): string {
   const dataTestId = tile.getAttribute("data-testid");
   if (!dataTestId || !dataTestId.startsWith("feed-tile-")) {
@@ -99,11 +92,6 @@ export function extractMerchantTLDFromDataTestId(tile: HTMLElement): string {
   }
 }
 
-/**
- * Extracts merchantTLD from tile element
- * Primary: data-testid (most reliable)
- * Fallback: img src domain parameter
- */
 export function extractMerchantTLD(tile: HTMLElement): string {
   const tldFromDataTestId = extractMerchantTLDFromDataTestId(tile);
   if (tldFromDataTestId) {
@@ -163,10 +151,6 @@ export function domainToDisplayName(domain: string): string {
   return capitalized.join(" ");
 }
 
-/**
- * Extracts merchant name from tile element
- * Uses merchantTLD and converts to display name
- */
 export function extractMerchantName(tile: HTMLElement): string {
   const merchantTLD = extractMerchantTLD(tile);
   if (merchantTLD) {
@@ -175,9 +159,6 @@ export function extractMerchantName(tile: HTMLElement): string {
   return "Unknown Merchant";
 }
 
-/**
- * Extracts mileage text from an offer tile element
- */
 export function extractMileageText(tile: HTMLElement): string {
   let mileageText = "0 miles";
 
@@ -205,9 +186,6 @@ export function extractMileageText(tile: HTMLElement): string {
   return mileageText;
 }
 
-/**
- * Parses mileage value from text string
- */
 export function parseMileageValue(text: string): number {
   const cleanedText = text.replace(/\*/g, "").trim();
 
@@ -224,10 +202,6 @@ export function parseMileageValue(text: string): number {
   return 0;
 }
 
-/**
- * Finds the main container holding offer tiles
- * Multi-strategy fallback approach
- */
 export function findMainContainer(): HTMLElement | null {
   const firstTile = document.querySelector('[data-testid^="feed-tile-"]');
   if (firstTile && firstTile.parentElement) {
@@ -262,13 +236,42 @@ export function findMainContainer(): HTMLElement | null {
  * Finds the "View More Offers" pagination button
  */
 export function findViewMoreButton(): HTMLButtonElement | null {
-  let button = Array.from(document.querySelectorAll("button")).find(
+  const allButtons = document.querySelectorAll("button");
+
+  console.log('[DOMHelpers] Finding "View More Offers" button:', {
+    totalButtons: allButtons.length,
+    buttonTexts: Array.from(allButtons).slice(0, 10).map(btn => ({
+      text: btn.textContent?.trim(),
+      visible: btn.offsetParent !== null
+    }))
+  });
+
+  let button = Array.from(allButtons).find(
     btn => btn.textContent && btn.textContent.trim() === "View More Offers"
   );
-  if (button) return button as HTMLButtonElement;
 
-  button = Array.from(document.querySelectorAll("button")).find(
+  if (button) {
+    console.log('[DOMHelpers] Found exact match button:', {
+      text: button.textContent?.trim(),
+      visible: button.offsetParent !== null,
+      disabled: button.hasAttribute('disabled')
+    });
+    return button as HTMLButtonElement;
+  }
+
+  button = Array.from(allButtons).find(
     btn => btn.textContent && btn.textContent.includes("View More")
   );
+
+  if (button) {
+    console.log('[DOMHelpers] Found partial match button:', {
+      text: button.textContent?.trim(),
+      visible: button.offsetParent !== null,
+      disabled: button.hasAttribute('disabled')
+    });
+  } else {
+    console.log('[DOMHelpers] No "View More" button found');
+  }
+
   return (button as HTMLButtonElement) || null;
 }

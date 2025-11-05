@@ -1,4 +1,6 @@
-import { getCurrentTab, sendMessageToTab } from "./chromeApi";
+import { getCurrentTab } from "./chromeApi";
+import { MessageBus } from "../../messaging";
+import type { RemoveFavoritesRequestMessage } from "../../types/messages";
 
 /**
  * Disables the favorites feature in the active tab by removing all star buttons
@@ -18,17 +20,29 @@ export async function removeFavoritesStarsInActiveTab(): Promise<{ success: bool
   }
 
   try {
-    const result = await sendMessageToTab<{ success: boolean; starsRemoved: number }>(activeTab.id, {
+    const message: RemoveFavoritesRequestMessage = {
       type: 'REMOVE_FAVORITES_REQUEST',
-    });
+    };
+    const result = await MessageBus.sendToTab<RemoveFavoritesRequestMessage>(activeTab.id, message) as { success: boolean; starsRemoved: number };
 
     return result;
   } catch (error) {
     console.error("Remove favorites stars failed:", error);
+
+    let errorMessage = "Remove failed";
+    if (error instanceof Error) {
+      if (error.message.includes('Could not establish connection') ||
+          error.message.includes('Receiving end does not exist')) {
+        errorMessage = "Please refresh the Capital One page and try again";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return {
       success: false,
       starsRemoved: 0,
-      error: error instanceof Error ? error.message : "Remove failed",
+      error: errorMessage,
     };
   }
 }

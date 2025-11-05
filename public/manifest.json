@@ -1,13 +1,16 @@
 {
   "manifest_version": 3,
   "name": "C1 Offers Sorter",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "A small utility extension used to load and sort all C1 offers by mileage or merchant name.",
   "minimum_chrome_version": "109",
   "permissions": ["activeTab", "scripting", "storage"],
   "action": {
     "default_popup": "index.html",
     "default_title": "C1 Offers Sorter"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -16,6 +19,12 @@
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected-scripts/pagination.js"],
+      "matches": ["https://capitaloneoffers.com/*"]
     }
   ],
   "icons": {

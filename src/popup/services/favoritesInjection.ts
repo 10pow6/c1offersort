@@ -1,5 +1,7 @@
 import type { FavoritesResult } from "../../types";
-import { getCurrentTab, sendMessageToTab } from "./chromeApi";
+import { getCurrentTab } from "./chromeApi";
+import { MessageBus } from "../../messaging";
+import type { InjectFavoritesRequestMessage } from "../../types/messages";
 
 /**
  * Enables the favorites feature in the active tab by injecting star buttons into offer tiles.
@@ -19,17 +21,29 @@ export async function injectFavoritesInActiveTab(): Promise<FavoritesResult> {
   }
 
   try {
-    const result = await sendMessageToTab<FavoritesResult>(activeTab.id, {
+    const message: InjectFavoritesRequestMessage = {
       type: 'INJECT_FAVORITES_REQUEST',
-    });
+    };
+    const result = await MessageBus.sendToTab<InjectFavoritesRequestMessage>(activeTab.id, message) as FavoritesResult;
 
     return result;
   } catch (error) {
     console.error("[Favorites] Injection failed:", error);
+
+    let errorMessage = "Injection failed";
+    if (error instanceof Error) {
+      if (error.message.includes('Could not establish connection') ||
+          error.message.includes('Receiving end does not exist')) {
+        errorMessage = "Please refresh the Capital One page and try again";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return {
       success: false,
       favoritesCount: 0,
-      error: error instanceof Error ? error.message : "Injection failed",
+      error: errorMessage,
     };
   }
 }

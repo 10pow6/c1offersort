@@ -3,8 +3,9 @@ import {
   extractMerchantName,
   extractMileageText,
   shouldExcludeTile,
-} from '../../../shared/domHelpers';
-import { getFavorites, createStarButton, type Favorite } from '../../../shared/favoritesHelpers';
+} from '@/shared/domHelpers';
+import { getFavorites, createStarButton, type Favorite } from '@/shared/favoritesHelpers';
+import { isContextInvalidatedError, safeStorageGet } from '@/utils/contextCheck';
 
 const ENABLED_KEY = "c1-favorites-enabled";
 
@@ -58,12 +59,11 @@ export async function injectStarsIntoTiles(tiles: HTMLElement[]): Promise<void> 
 /**
  * Re-injects favorite stars after sorting operation.
  * Only runs if favorites feature is enabled in storage.
- *
- * @param processedTiles - Set to track which tiles have been processed
+ * Returns silently if extension context is invalidated.
  */
-export async function reinjectStarsAfterSort(processedTiles: Set<string>): Promise<void> {
+export async function reinjectStarsAfterSort(): Promise<void> {
   try {
-    const enabledResult = await chrome.storage.local.get(ENABLED_KEY);
+    const enabledResult = await safeStorageGet(ENABLED_KEY, { [ENABLED_KEY]: false });
     const isEnabled = enabledResult[ENABLED_KEY] === true;
 
     if (!isEnabled) {
@@ -78,7 +78,8 @@ export async function reinjectStarsAfterSort(processedTiles: Set<string>): Promi
       await injectStarsIntoTiles(allTiles as HTMLElement[]);
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+    if (isContextInvalidatedError(error)) {
+      console.warn('[Favorites] Extension context invalidated during reinjection');
       return;
     }
     throw error;
@@ -98,11 +99,11 @@ export async function injectFavorites(
   try {
     const favorites = await getFavorites();
 
+    // CRITICAL FIX: Disconnect old observer before creating new one to prevent accumulation
     if (favoritesObserverRef.current) {
-      return {
-        success: true,
-        favoritesCount: favorites.length,
-      };
+      console.log('[Favorites] Disconnecting existing observer before re-injection');
+      favoritesObserverRef.current.disconnect();
+      favoritesObserverRef.current = null;
     }
 
     const allTiles = document.querySelectorAll('[data-testid^="feed-tile-"]');
@@ -175,10 +176,11 @@ export async function injectFavorites(
       subtree: true,
     });
 
+    // Use 'once' option to prevent accumulating multiple listeners
     window.addEventListener('beforeunload', () => {
       observer.disconnect();
       favoritesObserverRef.current = null;
-    });
+    }, { once: true });
 
     return {
       success: true,

@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useSortOffers } from "../useSortOffers";
 import * as chromeApi from "../../services/chromeApi";
-import type { SortResult } from "../../../types";
+import type { SortResult } from "@/types";
 
 vi.mock("../../services/chromeApi");
 

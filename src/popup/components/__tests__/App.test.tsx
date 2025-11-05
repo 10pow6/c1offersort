@@ -12,7 +12,7 @@ import * as useFavoritesHook from "../../hooks/useFavorites";
 import * as favoritesInjection from "../../services/favoritesInjection";
 import * as applyFavoritesFilter from "../../services/applyFavoritesFilter";
 import * as removeFavoritesStars from "../../services/removeFavoritesStars";
-import type { SortResult } from "../../../types";
+import type { SortResult } from "@/types";
 
 vi.mock("../../hooks/useCurrentTab");
 vi.mock("../../hooks/useSortOffers");

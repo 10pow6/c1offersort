@@ -11,6 +11,7 @@ const messageListeners = new Set<MessageListener>();
 
 globalThis.chrome = {
   runtime: {
+    id: 'test-extension-id',
     onMessage: {
       addListener: (listener: MessageListener) => {
         messageListeners.add(listener);
@@ -22,13 +23,14 @@ globalThis.chrome = {
         messageListeners.forEach(listener => listener(message, sender, sendResponse));
       },
     },
+    sendMessage: vi.fn().mockResolvedValue({}),
   },
   storage: {
     local: {
-      get: vi.fn().mockResolvedValue({}),
-      set: vi.fn().mockResolvedValue(undefined),
-      remove: vi.fn().mockResolvedValue(undefined),
-      clear: vi.fn().mockResolvedValue(undefined),
+      get: vi.fn(() => Promise.resolve({})),
+      set: vi.fn(() => Promise.resolve()),
+      remove: vi.fn(() => Promise.resolve()),
+      clear: vi.fn(() => Promise.resolve()),
     },
   },
   tabs: {

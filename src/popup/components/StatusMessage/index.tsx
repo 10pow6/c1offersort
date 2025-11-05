@@ -1,5 +1,5 @@
 import React from "react";
-import type { SortResult } from "../../../types";
+import type { SortResult } from "@/types";
 import "./StatusMessage.css";
 
 interface ProgressUpdate {

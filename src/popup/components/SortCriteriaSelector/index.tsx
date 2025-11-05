@@ -1,5 +1,5 @@
 import React from "react";
-import type { SortCriteria } from "../../../types";
+import type { SortCriteria } from "@/types";
 import "./SortCriteriaSelector.css";
 
 interface SortCriteriaSelectorProps {

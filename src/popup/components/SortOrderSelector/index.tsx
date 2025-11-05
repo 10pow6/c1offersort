@@ -1,5 +1,5 @@
 import React from "react";
-import type { SortOrder, SortCriteria } from "../../../types";
+import type { SortOrder, SortCriteria } from "@/types";
 import "./SortOrderSelector.css";
 
 interface SortOrderSelectorProps {

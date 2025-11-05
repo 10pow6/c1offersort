@@ -1,5 +1,5 @@
 import React from "react";
-import { VALID_URLS } from "../../../utils/constants";
+import { VALID_URLS } from "@/utils/constants";
 import "./InvalidPageOverlay.css";
 
 /**

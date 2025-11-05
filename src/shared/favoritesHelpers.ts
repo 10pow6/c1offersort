@@ -1,7 +1,5 @@
-/**
- * Favorites Helper Functions
- * Shared utilities for managing favorites in Chrome storage.
- */
+import { isContextInvalidatedError, safeStorageGet, safeStorageSet } from '../utils/contextCheck';
+
 const STORAGE_KEY = "c1-offers-favorites";
 const MAX_FAVORITES = 1000;
 const MAX_STORAGE_SIZE = 1000000;
@@ -13,9 +11,6 @@ export interface Favorite {
   favoritedAt: number;
 }
 
-/**
- * Sanitizes string input to prevent XSS attacks
- */
 export function sanitizeString(input: string, maxLength: number = 500): string {
   if (typeof input !== 'string') return "";
   let cleaned = input.replace(/<[^>]*>/g, '');
@@ -24,17 +19,11 @@ export function sanitizeString(input: string, maxLength: number = 500): string {
   return cleaned.trim();
 }
 
-/**
- * Sanitizes merchant name
- */
 export function sanitizeMerchantName(merchantName: string): string {
   const sanitized = sanitizeString(merchantName, 200);
   return sanitized.length === 0 ? "Unknown Merchant" : sanitized;
 }
 
-/**
- * Sanitizes mileage value
- */
 export function sanitizeMileageValue(mileageValue: string): string {
   const sanitized = sanitizeString(mileageValue, 100);
   if (!/\d+[,\d]*\s*(?:X\s*)?miles/i.test(sanitized) && sanitized !== "0 miles") {
@@ -43,22 +32,20 @@ export function sanitizeMileageValue(mileageValue: string): string {
   return sanitized;
 }
 
-/**
- * Gets all favorites from Chrome storage
- */
 export async function getFavorites(): Promise<Favorite[]> {
   try {
-    const result = await chrome.storage.local.get(STORAGE_KEY);
+    const result = await safeStorageGet(STORAGE_KEY, { [STORAGE_KEY]: [] });
     return result[STORAGE_KEY] || [];
   } catch (error) {
+    if (isContextInvalidatedError(error)) {
+      console.warn('[Favorites] Extension context invalidated, returning empty favorites');
+      return [];
+    }
     console.error('[Favorites] Failed to get favorites:', error);
     return [];
   }
 }
 
-/**
- * Saves favorites to Chrome storage with validation
- */
 export async function saveFavorites(favorites: Favorite[]): Promise<void> {
   try {
     if (favorites.length > MAX_FAVORITES) {
@@ -70,8 +57,15 @@ export async function saveFavorites(favorites: Favorite[]): Promise<void> {
       throw new Error('Favorites storage too large');
     }
 
-    await chrome.storage.local.set({ [STORAGE_KEY]: favorites });
+    const success = await safeStorageSet({ [STORAGE_KEY]: favorites });
+    if (!success) {
+      console.warn('[Favorites] Save skipped - extension context invalidated');
+    }
   } catch (error) {
+    if (isContextInvalidatedError(error)) {
+      console.warn('[Favorites] Extension context invalidated during save');
+      return;
+    }
     console.error('[Favorites] Save failed:', error);
     throw error;
   }

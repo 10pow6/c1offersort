@@ -6,10 +6,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useFavorites } from "../useFavorites";
-import * as favoritesManager from "../../../utils/favoritesManager";
-import type { FavoritedOffer } from "../../../types";
+import * as favoritesManager from "@/utils/favoritesManager";
+import type { FavoritedOffer } from "@/types";
 
-vi.mock("../../../utils/favoritesManager");
+vi.mock("@/utils/favoritesManager");
 
 describe("useFavorites - User Behaviors", () => {
   const mockFavorites: FavoritedOffer[] = [
@@ -31,7 +31,6 @@ describe("useFavorites - User Behaviors", () => {
     vi.clearAllMocks();
 
     vi.mocked(favoritesManager.getFavorites).mockResolvedValue([]);
-    vi.mocked(favoritesManager.getFavoritesCount).mockResolvedValue(0);
   });
 
   describe("User Opens Popup - Initial Load", () => {

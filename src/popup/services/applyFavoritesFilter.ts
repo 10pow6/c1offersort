@@ -1,5 +1,7 @@
 import type { FavoritesResult } from "../../types";
-import { getCurrentTab, sendMessageToTab } from "./chromeApi";
+import { getCurrentTab } from "./chromeApi";
+import { MessageBus } from "../../messaging";
+import type { FilterRequestMessage } from "../../types/messages";
 
 /**
  * Applies or removes the favorites filter in the active tab.
@@ -22,18 +24,30 @@ export async function applyFavoritesFilterInActiveTab(
   }
 
   try {
-    const result = await sendMessageToTab<FavoritesResult>(activeTab.id, {
+    const message: FilterRequestMessage = {
       type: 'FILTER_REQUEST',
       showFavoritesOnly,
-    });
+    };
+    const result = await MessageBus.sendToTab<FilterRequestMessage>(activeTab.id, message) as FavoritesResult;
 
     return result;
   } catch (error) {
     console.error("[Favorites Filter] Failed:", error);
+
+    let errorMessage = "Filter failed";
+    if (error instanceof Error) {
+      if (error.message.includes('Could not establish connection') ||
+          error.message.includes('Receiving end does not exist')) {
+        errorMessage = "Please refresh the Capital One page and try again";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return {
       success: false,
       favoritesCount: 0,
-      error: error instanceof Error ? error.message : "Filter failed",
+      error: errorMessage,
     };
   }
 }

@@ -183,20 +183,3 @@ export async function toggleFavorite(offer: Omit<FavoritedOffer, "favoritedAt">)
     return true;
   }
 }
-
-export async function getFavoritesCount(): Promise<number> {
-  const favorites = await getFavorites();
-  return favorites.length;
-}
-
-export async function clearFavorites(): Promise<void> {
-  try {
-    await chrome.storage.local.remove(STORAGE_KEY);
-  } catch (error) {
-    throw new FavoritesError(
-      'Failed to clear favorites',
-      FavoritesErrorCode.STORAGE_WRITE_FAILED,
-      { originalError: error }
-    );
-  }
-}

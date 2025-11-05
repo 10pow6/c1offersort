@@ -66,25 +66,3 @@ export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
 export function isSortingError(error: unknown): error is SortingError {
   return error instanceof SortingError;
 }
-
-/**
- * Converts an unknown error into a SortingError with proper error code and context.
- * Preserves the original error message and adds it to the context for debugging.
- *
- * @param error - The original error (can be Error, string, or any type)
- * @param code - The ErrorCode to assign to the new SortingError
- * @param additionalContext - Optional additional context to include
- * @returns A new SortingError instance with structured error information
- */
-export function toSortingError(
-  error: unknown,
-  code: ErrorCode,
-  additionalContext: Record<string, unknown> = {}
-): SortingError {
-  const message = error instanceof Error ? error.message : String(error);
-  const context = {
-    ...additionalContext,
-    originalError: error instanceof Error ? error.name : typeof error,
-  };
-  return new SortingError(message, code, context);
-}

@@ -3,8 +3,8 @@ import {
   findMainContainer,
   shouldExcludeTile,
   countRealTiles,
-} from '../../../shared/domHelpers';
-import { getFavorites } from '../../../shared/favoritesHelpers';
+} from '@/shared/domHelpers';
+import { getFavorites } from '@/shared/favoritesHelpers';
 import { loadAllTiles } from '../pagination';
 
 /**

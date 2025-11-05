@@ -1,6 +1,6 @@
 import React from "react";
-import type { FavoritedOffer } from "../../../types";
-import { removeFavorite } from "../../../utils/favoritesManager";
+import type { FavoritedOffer } from "@/types";
+import { removeFavorite } from "@/utils/favoritesManager";
 import "./FavoritesList.css";
 
 interface FavoritesListProps {

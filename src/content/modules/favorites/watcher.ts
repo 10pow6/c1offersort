@@ -1,5 +1,6 @@
-import { shouldExcludeTile } from '../../../shared/domHelpers';
+import { shouldExcludeTile } from '@/shared/domHelpers';
 import { injectStarsIntoTiles } from './inject';
+import { isContextInvalidatedError, safeStorageGet } from '@/utils/contextCheck';
 
 const ENABLED_KEY = "c1-favorites-enabled";
 
@@ -15,7 +16,7 @@ export function setupTilesWatcher(processedTiles: Set<string>) {
 
   const scanForInitialTiles = async () => {
     try {
-      const enabledResult = await chrome.storage.local.get(ENABLED_KEY);
+      const enabledResult = await safeStorageGet(ENABLED_KEY, { [ENABLED_KEY]: false });
       const isEnabled = enabledResult[ENABLED_KEY] === true;
 
       if (!isEnabled) {
@@ -27,7 +28,7 @@ export function setupTilesWatcher(processedTiles: Set<string>) {
       for (const interval of scanIntervals) {
         await new Promise((resolve) => setTimeout(resolve, interval));
 
-        const checkEnabled = await chrome.storage.local.get(ENABLED_KEY);
+        const checkEnabled = await safeStorageGet(ENABLED_KEY, { [ENABLED_KEY]: false });
         if (!checkEnabled[ENABLED_KEY]) {
           return;
         }
@@ -48,7 +49,8 @@ export function setupTilesWatcher(processedTiles: Set<string>) {
         }
       }
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+      if (isContextInvalidatedError(error)) {
+        console.warn('[Favorites] Extension context invalidated during initial scan');
         return;
       }
       throw error;
@@ -64,7 +66,7 @@ export function setupTilesWatcher(processedTiles: Set<string>) {
 
     debounceTimer = window.setTimeout(async () => {
       try {
-        const enabledResult = await chrome.storage.local.get(ENABLED_KEY);
+        const enabledResult = await safeStorageGet(ENABLED_KEY, { [ENABLED_KEY]: false });
         const isEnabled = enabledResult[ENABLED_KEY] === true;
 
         if (!isEnabled) {
@@ -115,11 +117,15 @@ export function setupTilesWatcher(processedTiles: Set<string>) {
 
         debounceTimer = null;
       } catch (error) {
-        if (error instanceof Error && error.message.includes('Extension context invalidated')) {
-          debounceTimer = null;
+        // CRITICAL FIX: Always clear debounceTimer on any error, not just context errors
+        debounceTimer = null;
+
+        if (isContextInvalidatedError(error)) {
+          console.warn('[Favorites] Extension context invalidated during mutation handling');
           return;
         }
-        throw error;
+        console.error('[Favorites] Error in mutation handler:', error);
+        // Don't rethrow - this would crash the observer permanently
       }
     }, 300);
   });

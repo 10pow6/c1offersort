@@ -9,45 +9,114 @@ import { injectFavorites, removeFavoritesStars } from '../modules/favorites/inje
  * @param processedTiles - Set to track which tiles have been processed
  * @param favoritesObserver - Reference to the favorites MutationObserver
  * @param reinjectStarsCallback - Callback to re-inject stars after sorting
+ * @param progressState - In-memory progress tracking state
  */
 export function setupMessageHandler(
   fullyPaginated: { value: boolean },
   processedTiles: Set<string>,
   favoritesObserver: { current: MutationObserver | null },
-  reinjectStarsCallback: () => Promise<void>
+  reinjectStarsCallback: () => Promise<void>,
+  progressState: {
+    sort: {
+      isActive: boolean;
+      progress: {
+        type: "pagination" | "sorting";
+        offersLoaded?: number;
+        pagesLoaded?: number;
+        totalOffers?: number;
+      } | null;
+    };
+    filter: {
+      isActive: boolean;
+      progress: {
+        offersLoaded: number;
+        pagesLoaded: number;
+      } | null;
+    };
+  }
 ) {
+  console.log('[MessageHandler] Setting up message listener...');
+
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    console.log('[MessageHandler] Received message:', message);
+
     if (!message || typeof message !== 'object' || !('type' in message)) {
+      console.log('[MessageHandler] Invalid message format');
       return false;
     }
 
     const handleAsync = async () => {
+      console.log('[MessageHandler] Handling message type:', message.type);
       switch (message.type) {
         case 'SORT_REQUEST':
-          return await executeSorting(
+          console.log('[MessageHandler] Processing SORT_REQUEST');
+          progressState.sort.isActive = true;
+          progressState.sort.progress = null;
+          const sortResult = await executeSorting(
             message.criteria,
             message.order,
             fullyPaginated,
             processedTiles,
-            reinjectStarsCallback
+            reinjectStarsCallback,
+            progressState
           );
+          progressState.sort.isActive = false;
+          progressState.sort.progress = null;
+
+          // Send completion message to popup in case it reopened during sorting
+          try {
+            chrome.runtime.sendMessage({
+              type: 'SORT_COMPLETE',
+              result: sortResult
+            }).catch(() => console.log('[MessageHandler] Popup not available for completion message'));
+          } catch (e) {
+            console.log('[MessageHandler] Failed to send completion message:', e);
+          }
+
+          return sortResult;
         case 'FILTER_REQUEST':
-          return await applyFavoritesFilter(message.showFavoritesOnly, fullyPaginated);
+          progressState.filter.isActive = message.showFavoritesOnly;
+          progressState.filter.progress = null;
+          const filterResult = await applyFavoritesFilter(message.showFavoritesOnly, fullyPaginated);
+          progressState.filter.isActive = false;
+          progressState.filter.progress = null;
+          return filterResult;
         case 'LOAD_ALL_REQUEST':
           return await loadAllOffers(fullyPaginated);
         case 'INJECT_FAVORITES_REQUEST':
           return await injectFavorites(favoritesObserver);
         case 'REMOVE_FAVORITES_REQUEST':
           return await removeFavoritesStars(favoritesObserver);
+        case 'GET_SORT_PROGRESS':
+          console.log('[MessageHandler] Processing GET_SORT_PROGRESS');
+          return {
+            isActive: progressState.sort.isActive,
+            progress: progressState.sort.progress,
+          };
+        case 'GET_FILTER_PROGRESS':
+          console.log('[MessageHandler] Processing GET_FILTER_PROGRESS');
+          return {
+            isActive: progressState.filter.isActive,
+            progress: progressState.filter.progress,
+          };
         default:
+          console.log('[MessageHandler] Unknown message type:', message.type);
           return { success: false, error: 'Unknown message type' };
       }
     };
 
-    handleAsync().then(sendResponse).catch((error) => {
-      sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
-    });
+    handleAsync()
+      .then((result) => {
+        console.log('[MessageHandler] Sending response:', result);
+        sendResponse(result);
+      })
+      .catch((error) => {
+        console.error('[MessageHandler] Error handling message:', error);
+        sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+      });
 
     return true;
   });
+
+  console.log('[MessageHandler] Message listener setup complete');
 }

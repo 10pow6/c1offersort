@@ -1,6 +1,6 @@
 # Privacy Policy for C1 Offers Sorter
 
-**Last Updated**: November 1, 2025
+**Last Updated**: November 4, 2025
 
 ## Overview
 
