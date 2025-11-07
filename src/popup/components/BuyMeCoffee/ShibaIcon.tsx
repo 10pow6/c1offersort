@@ -1,14 +1,9 @@
-import React from "react";
-
 interface ShibaIconProps {
   className?: string;
   size?: number;
 }
 
-/**
- * SVG icon of a black and tan shiba inu (Nori!)
- */
-export const ShibaIcon: React.FC<ShibaIconProps> = ({ className, size = 16 }) => {
+export const ShibaIcon = ({ className, size = 16 }: ShibaIconProps) => {
   return (
     <svg
       className={className}

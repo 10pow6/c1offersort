@@ -1,5 +1,6 @@
 import { findViewMoreButton } from '../../shared/domHelpers';
 import { progressState } from '../index';
+import { SELECTORS } from '../../utils/constants';
 
 function parsePaginationResult(element: HTMLElement | null): { pagesLoaded: number } {
   if (!element) {
@@ -51,6 +52,7 @@ async function executePaginationInPageContext(): Promise<number> {
   return new Promise((resolve) => {
     let checkResult: ReturnType<typeof setInterval> | null = null;
 
+    // Consolidated cleanup function for intervals and DOM elements
     const cleanup = () => {
       if (checkResult !== null) {
         clearInterval(checkResult);
@@ -58,11 +60,32 @@ async function executePaginationInPageContext(): Promise<number> {
       }
     };
 
+    const cleanupDOMElements = () => {
+      const elementsToRemove = [
+        'c1-pagination-result',
+        'c1-pagination-progress',
+        'c1-layout-info',
+        'c1-pagination-abort'
+      ];
+      elementsToRemove.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+      });
+    };
+
     try {
-      const oldResult = document.getElementById('c1-pagination-result');
-      const oldProgress = document.getElementById('c1-pagination-progress');
-      if (oldResult) oldResult.remove();
-      if (oldProgress) oldProgress.remove();
+      // Clean up any leftover elements from previous runs
+      cleanupDOMElements();
+
+      // Pass selector information to injected script via DOM
+      const layoutInfo = document.createElement('div');
+      layoutInfo.id = 'c1-layout-info';
+      layoutInfo.style.display = 'none';
+      layoutInfo.setAttribute('data-view-more-selector', SELECTORS.viewMoreButton);
+      layoutInfo.setAttribute('data-tile-selector', SELECTORS.offerTile);
+      layoutInfo.setAttribute('data-container-selector', SELECTORS.container);
+      document.body.appendChild(layoutInfo);
+      console.log('[Pagination] Injected selector info for pagination');
 
       const script = document.createElement('script');
       script.src = chrome.runtime.getURL('injected-scripts/pagination.js');
@@ -71,7 +94,7 @@ async function executePaginationInPageContext(): Promise<number> {
         script.remove();
 
         let attempts = 0;
-        const maxWaitAttempts = 720;
+        const maxWaitAttempts = 480; // 4 minutes with 500ms polling (balanced for reliability)
         let lastProgressTimestamp = 0;
 
         checkResult = setInterval(() => {
@@ -123,10 +146,7 @@ async function executePaginationInPageContext(): Promise<number> {
             const result = parsePaginationResult(resultElement);
             console.log('[Pagination] Pagination complete, pages loaded:', result.pagesLoaded);
 
-            resultElement.remove();
-            const progressEl = document.getElementById('c1-pagination-progress');
-            if (progressEl) progressEl.remove();
-
+            cleanupDOMElements();
             resolve(result.pagesLoaded);
             return;
           }
@@ -135,27 +155,17 @@ async function executePaginationInPageContext(): Promise<number> {
           if (attempts >= maxWaitAttempts) {
             cleanup();
             console.warn('[Pagination] Timeout waiting for pagination result');
-
-            const progressEl = document.getElementById('c1-pagination-progress');
-            const resultEl = document.getElementById('c1-pagination-result');
-            if (progressEl) progressEl.remove();
-            if (resultEl) resultEl.remove();
-
+            cleanupDOMElements();
             resolve(0);
           }
-        }, 250);
+        }, 500); // Reduced from 250ms to 500ms (50% fewer polls)
       };
 
       script.onerror = (error) => {
         console.error('[Pagination] Error loading pagination script:', error);
         script.remove();
         cleanup();
-
-        const progressEl = document.getElementById('c1-pagination-progress');
-        const resultEl = document.getElementById('c1-pagination-result');
-        if (progressEl) progressEl.remove();
-        if (resultEl) resultEl.remove();
-
+        cleanupDOMElements();
         resolve(0);
       };
 
@@ -163,12 +173,7 @@ async function executePaginationInPageContext(): Promise<number> {
     } catch (error) {
       console.error('[Pagination] Error executing pagination script:', error);
       cleanup();
-
-      const progressEl = document.getElementById('c1-pagination-progress');
-      const resultEl = document.getElementById('c1-pagination-result');
-      if (progressEl) progressEl.remove();
-      if (resultEl) resultEl.remove();
-
+      cleanupDOMElements();
       resolve(0);
     }
   });
@@ -179,11 +184,7 @@ export async function loadAllTiles(fullyPaginated: { value: boolean }): Promise<
     fullyPaginatedValue: fullyPaginated.value
   });
 
-  if (fullyPaginated.value) {
-    console.log('[Pagination] Already fully paginated, returning early');
-    return 0;
-  }
-
+  // Check if button exists - if it does, reset the flag even if we thought we were done
   const initialButton = findViewMoreButton();
   console.log('[Pagination] Initial "View More Offers" button:', {
     found: !!initialButton,
@@ -195,6 +196,12 @@ export async function loadAllTiles(fullyPaginated: { value: boolean }): Promise<
     console.log('[Pagination] No initial button found, marking as fully paginated');
     fullyPaginated.value = true;
     return 0;
+  }
+
+  // Button exists - reset flag and paginate (handles case where pagination stopped early)
+  if (fullyPaginated.value) {
+    console.log('[Pagination] Button still exists despite fullyPaginated flag - resetting and retrying pagination');
+    fullyPaginated.value = false;
   }
 
   const pagesLoaded = await executePaginationInPageContext();

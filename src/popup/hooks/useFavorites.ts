@@ -1,46 +1,44 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getFavorites } from "../../utils/favoritesManager";
 import type { FavoritedOffer } from "../../types";
 
 /**
  * Custom hook for managing favorites state from Chrome Storage.
+ * Automatically loads favorites when the component mounts and provides a refresh function.
+ * URL-aware: loads favorites specific to the current tab's URL.
  *
- * Automatically loads favorites when the component mounts (e.g., when popup opens),
- * ensuring the UI always reflects the current state. Provides a refresh function
- * to reload favorites after modifications.
- *
- * @returns Favorites data, count, filter state, and control functions
+ * @param currentUrl - The current tab's URL to determine which favorites to load
+ * @returns Favorites data, count, and refresh function
  */
-export function useFavorites() {
+export function useFavorites(currentUrl: string | null) {
   const [favorites, setFavorites] = useState<FavoritedOffer[]>([]);
   const [favoritesCount, setFavoritesCount] = useState(0);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const currentUrlRef = useRef(currentUrl);
+
+  useEffect(() => {
+    currentUrlRef.current = currentUrl;
+  }, [currentUrl]);
 
   useEffect(() => {
     async function loadFavorites() {
-      const loadedFavorites = await getFavorites();
+      if (!currentUrl) return;
+      const loadedFavorites = await getFavorites(currentUrl);
       setFavorites(loadedFavorites);
       setFavoritesCount(loadedFavorites.length);
     }
     loadFavorites();
-  }, []);
+  }, [currentUrl]);
 
   const refreshFavorites = useCallback(async () => {
-    const loadedFavorites = await getFavorites();
+    if (!currentUrlRef.current) return;
+    const loadedFavorites = await getFavorites(currentUrlRef.current);
     setFavorites(loadedFavorites);
     setFavoritesCount(loadedFavorites.length);
-  }, []);
-
-  const toggleShowFavoritesOnly = useCallback(() => {
-    setShowFavoritesOnly(prev => !prev);
   }, []);
 
   return {
     favorites,
     favoritesCount,
-    showFavoritesOnly,
-    setShowFavoritesOnly,
-    toggleShowFavoritesOnly,
     refreshFavorites,
   };
 }

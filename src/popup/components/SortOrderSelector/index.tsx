@@ -1,4 +1,4 @@
-import React from "react";
+import type { ChangeEvent } from "react";
 import type { SortOrder, SortCriteria } from "@/types";
 import "./SortOrderSelector.css";
 
@@ -8,22 +8,12 @@ interface SortOrderSelectorProps {
   onChange: (order: SortOrder) => void;
 }
 
-/**
- * Radio button group component for selecting sort order (ascending/descending).
- * Labels dynamically adjust based on sort criteria:
- * - Mileage: "Highest Miles" / "Lowest Miles"
- * - Alphabetical: "A to Z" / "Z to A"
- *
- * @param sortOrder - Currently selected sort order
- * @param sortCriteria - Current sort criteria (affects label text)
- * @param onChange - Callback function when sort order changes
- */
-export const SortOrderSelector: React.FC<SortOrderSelectorProps> = ({
+export const SortOrderSelector = ({
   sortOrder,
   sortCriteria,
   onChange,
-}) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+}: SortOrderSelectorProps) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value as SortOrder);
   };
 

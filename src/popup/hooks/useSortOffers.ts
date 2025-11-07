@@ -44,7 +44,6 @@ export function useSortOffers(): UseSortOffersResult {
   const [progressUpdate, setProgressUpdate] = useState<ProgressUpdate | null>(null);
   const lastUpdateTimeRef = useRef<number>(0);
 
-  // Query content script for progress on mount
   useEffect(() => {
     async function queryProgress() {
       try {
@@ -68,57 +67,16 @@ export function useSortOffers(): UseSortOffersResult {
     queryProgress();
   }, []);
 
-  const messageListener = useCallback((
-    message: unknown,
-    _sender: chrome.runtime.MessageSender,
-    _sendResponse: (response?: any) => void
-  ) => {
-    if (typeof message !== "object" || message === null || !("type" in message)) {
-      return;
-    }
+  const setIsLoadingRef = useRef(setIsLoading);
+  const setProgressUpdateRef = useRef(setProgressUpdate);
+  const setLastResultRef = useRef(setLastResult);
 
-    const msg = message as {
-      type: string;
-      offersLoaded?: number;
-      pagesLoaded?: number;
-      totalOffers?: number;
-    };
-
-    const now = Date.now();
-    const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
-
-    if (msg.type === "PAGINATION_PROGRESS") {
-      if (timeSinceLastUpdate < 200) return;
-      if (typeof msg.offersLoaded !== "number" || typeof msg.pagesLoaded !== "number") {
-        return;
-      }
-
-      console.log('[useSortOffers] Received pagination progress:', msg.offersLoaded, 'offers,', msg.pagesLoaded, 'pages');
-      lastUpdateTimeRef.current = now;
-      setProgressUpdate({
-        type: "pagination",
-        offersLoaded: msg.offersLoaded,
-        pagesLoaded: msg.pagesLoaded,
-      });
-    } else if (msg.type === "SORTING_START") {
-      if (typeof msg.totalOffers !== "number") {
-        return;
-      }
-
-      console.log('[useSortOffers] Received sorting start:', msg.totalOffers, 'offers');
-      setProgressUpdate({
-        type: "sorting",
-        totalOffers: msg.totalOffers,
-      });
-    } else if (msg.type === "SORT_COMPLETE") {
-      console.log('[useSortOffers] Received sort completion:', 'result' in msg ? msg.result : undefined);
-      setIsLoading(false);
-      setProgressUpdate(null);
-      if ('result' in msg && msg.result && typeof msg.result === 'object' && 'success' in msg.result) {
-        setLastResult(msg.result as SortResult);
-      }
-    }
-  }, []);
+  // Update refs when setters change (setState functions are stable, so this rarely re-runs)
+  useEffect(() => {
+    setIsLoadingRef.current = setIsLoading;
+    setProgressUpdateRef.current = setProgressUpdate;
+    setLastResultRef.current = setLastResult;
+  }, [setIsLoading, setProgressUpdate, setLastResult]);
 
   useEffect(() => {
     if (!chrome?.runtime?.onMessage) {
@@ -126,13 +84,67 @@ export function useSortOffers(): UseSortOffersResult {
       return;
     }
 
-    chrome.runtime.onMessage.addListener(messageListener);
-    return () => {
-      if (chrome?.runtime?.onMessage) {
-        chrome.runtime.onMessage.removeListener(messageListener);
+    const messageListener = (
+      message: unknown,
+      _sender: chrome.runtime.MessageSender,
+      _sendResponse: (response?: any) => void
+    ) => {
+      if (typeof message !== "object" || message === null || !("type" in message)) {
+        return;
+      }
+
+      const msg = message as {
+        type: string;
+        offersLoaded?: number;
+        pagesLoaded?: number;
+        totalOffers?: number;
+      };
+
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
+
+      if (msg.type === "PAGINATION_PROGRESS") {
+        if (timeSinceLastUpdate < 200) return;
+        if (typeof msg.offersLoaded !== "number" || typeof msg.pagesLoaded !== "number") {
+          return;
+        }
+
+        console.log('[useSortOffers] Received pagination progress:', msg.offersLoaded, 'offers,', msg.pagesLoaded, 'pages');
+        lastUpdateTimeRef.current = now;
+        setProgressUpdateRef.current({
+          type: "pagination",
+          offersLoaded: msg.offersLoaded,
+          pagesLoaded: msg.pagesLoaded,
+        });
+      } else if (msg.type === "SORTING_START") {
+        if (typeof msg.totalOffers !== "number") {
+          return;
+        }
+
+        console.log('[useSortOffers] Received sorting start:', msg.totalOffers, 'offers');
+        setProgressUpdateRef.current({
+          type: "sorting",
+          totalOffers: msg.totalOffers,
+        });
+      } else if (msg.type === "SORT_COMPLETE") {
+        console.log('[useSortOffers] Received sort completion:', 'result' in msg ? msg.result : undefined);
+        setIsLoadingRef.current(false);
+        setProgressUpdateRef.current(null);
+        if ('result' in msg && msg.result && typeof msg.result === 'object' && 'success' in msg.result) {
+          setLastResultRef.current(msg.result as SortResult);
+        }
       }
     };
-  }, [messageListener]);
+
+    chrome.runtime.onMessage.addListener(messageListener);
+    return () => {
+      try {
+        chrome.runtime.onMessage.removeListener(messageListener);
+      } catch (error) {
+        console.log('[useSortOffers] Failed to remove message listener (extension context may be invalidated):', error);
+      }
+    };
+  }, []);
 
   const handleSort = useCallback(async () => {
     console.log('[useSortOffers] handleSort called with config:', sortConfig);

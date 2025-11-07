@@ -1,4 +1,3 @@
-import React from "react";
 import type { FavoritedOffer } from "@/types";
 import { removeFavorite } from "@/utils/favoritesManager";
 import "./FavoritesList.css";
@@ -7,16 +6,29 @@ interface FavoritesListProps {
   favorites: FavoritedOffer[];
   missingFavorites: string[];
   onRemove: () => void;
+  currentUrl: string | null;
 }
 
-export const FavoritesList: React.FC<FavoritesListProps> = ({
+export const FavoritesList = ({
   favorites,
   missingFavorites,
   onRemove,
-}) => {
+  currentUrl,
+}: FavoritesListProps) => {
   const handleRemove = async (merchantTLD: string) => {
     try {
-      await removeFavorite(merchantTLD);
+      await removeFavorite(merchantTLD, currentUrl || undefined);
+
+      // Send message to content script to update the star button on the page
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          type: "UPDATE_STAR_STATE",
+          merchantTLD,
+          isFavorited: false,
+        });
+      }
+
       onRemove();
     } catch (error) {
       console.error("[Favorites] Failed to remove:", error);

@@ -1,11 +1,12 @@
 import {
   extractMerchantTLD,
   findMainContainer,
-  shouldExcludeTile,
+  findAllTiles,
   countRealTiles,
 } from '@/shared/domHelpers';
 import { getFavorites } from '@/shared/favoritesHelpers';
 import { loadAllTiles } from '../pagination';
+import { getWatcherCleanup } from '../../index';
 
 /**
  * Applies or removes favorites filter to show/hide offer tiles.
@@ -28,6 +29,12 @@ export async function applyFavoritesFilter(
   try {
     if (showFavoritesOnly) {
       await loadAllTiles(fullyPaginated);
+
+      const watcherCleanup = getWatcherCleanup();
+      if (watcherCleanup) {
+        console.log('[Filter] Disabling tiles watcher observer');
+        watcherCleanup.disableObserverOnly();
+      }
     }
 
     const favorites = await getFavorites();
@@ -40,10 +47,7 @@ export async function applyFavoritesFilter(
       mainContainer.style.gridAutoFlow = "row";
     }
 
-    const allTiles = document.querySelectorAll('[data-testid^="feed-tile-"]');
-    const tiles = Array.from(allTiles).filter((tile) => {
-      return !shouldExcludeTile(tile);
-    });
+    const tiles = findAllTiles();
 
     let hiddenCount = 0;
     let shownCount = 0;

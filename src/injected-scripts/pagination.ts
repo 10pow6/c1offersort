@@ -11,17 +11,44 @@
   // PAGINATION TIMING CONSTANTS
   // Change these values to tune pagination performance
   // ========================================
-  const INITIAL_DELAY = 150; // ms - starting delay for first pagination attempt
-  const MIN_DELAY = 150; // ms - floor (fastest possible delay for fast connections)
+  const INITIAL_DELAY = 200; // ms - starting delay (faster for quick systems)
+  const MIN_DELAY = 150; // ms - floor (faster minimum while still safe for React)
   const MAX_DELAY = 4000; // ms - ceiling (slowest delay for slow connections)
-  const RETRY_DELAY = 150; // ms - delay between retries when button not found
-  const MAX_RETRIES = 2; // number of quick retries before giving up on button
-  const FAST_THRESHOLD = 250; // ms - response time considered "fast" (speed up more)
-  const SLOW_THRESHOLD = 800; // ms - response time considered "slow" (don't speed up)
+  const RETRY_DELAY = 300; // ms - delay between retries when button not found
+  const MAX_RETRIES = 3; // number of quick retries before giving up on button
+  const FAST_THRESHOLD = 300; // ms - response time considered "fast" (speed up more)
+  const SLOW_THRESHOLD = 1000; // ms - response time considered "slow" (don't speed up)
 
   console.log('[Pagination Injected] Running in page context');
 
+  // Read layout information from DOM (injected by content script)
+  const layoutInfoElement = document.getElementById('c1-layout-info');
+  const layoutName = layoutInfoElement?.getAttribute('data-layout-name') || 'unknown';
+  const layoutVersion = layoutInfoElement?.getAttribute('data-layout-version') || 'unknown';
+  const viewMoreSelector = layoutInfoElement?.getAttribute('data-view-more-selector') || '';
+  const tileSelector = layoutInfoElement?.getAttribute('data-tile-selector') || '';
+  const containerSelector = layoutInfoElement?.getAttribute('data-container-selector') || '';
+
+  console.log('[Pagination Injected] Using layout:', layoutName, layoutVersion);
+  if (viewMoreSelector) {
+    console.log('[Pagination Injected] View More button selector:', viewMoreSelector);
+  }
+  if (tileSelector) {
+    console.log('[Pagination Injected] Tile selector:', tileSelector);
+  }
+
   function countRealTiles(): number {
+    // Try layout-specific selector first
+    if (tileSelector && containerSelector) {
+      const container = document.querySelector(containerSelector);
+      if (container) {
+        const tiles = container.querySelectorAll(tileSelector);
+        console.log('[Pagination Injected] Counted', tiles.length, 'tiles using layout selector');
+        return tiles.length;
+      }
+    }
+
+    // Fallback: use data-testid (legacy method)
     const allTiles = document.querySelectorAll('[data-testid^="feed-tile-"]');
     let count = 0;
     for (const tile of allTiles) {
@@ -30,19 +57,48 @@
         count++;
       }
     }
+    console.log('[Pagination Injected] Counted', count, 'tiles using fallback data-testid method');
     return count;
   }
 
   function findViewMoreButton(): HTMLButtonElement | null {
+    // Try layout-specific selector first
+    if (viewMoreSelector) {
+      const button = document.querySelector(viewMoreSelector) as HTMLButtonElement;
+      if (button && button.isConnected) {
+        return button;
+      }
+    }
+
+    // Fallback: text-based search (more reliable for React apps that change classes)
     const allButtons = document.querySelectorAll("button");
-    const button = Array.from(allButtons).find(
-      btn => btn.textContent && btn.textContent.trim() === "View More Offers"
-    );
-    return button as HTMLButtonElement || null;
+    for (const btn of allButtons) {
+      const text = btn.textContent?.trim() || '';
+      // Check for "View More Offers" with flexible whitespace
+      if (text.includes('View More') && text.includes('Offers')) {
+        return btn as HTMLButtonElement;
+      }
+    }
+
+    return null;
   }
 
+  let activeTimeout: ReturnType<typeof setTimeout> | null = null;
+
   async function wait(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => {
+      activeTimeout = setTimeout(() => {
+        activeTimeout = null;
+        resolve();
+      }, ms);
+    });
+  }
+
+  function cancelActiveTimeout(): void {
+    if (activeTimeout !== null) {
+      clearTimeout(activeTimeout);
+      activeTimeout = null;
+    }
   }
 
   function withPreservedScroll(fn: () => void): void {
@@ -108,34 +164,71 @@
 
   console.log('[Pagination Injected] Starting pagination loop with adaptive delays');
 
+  // Create abort signal element for cleanup
+  const abortElement = document.createElement('div');
+  abortElement.id = 'c1-pagination-abort';
+  abortElement.style.display = 'none';
+  document.body.appendChild(abortElement);
+
+  // Cleanup helper to remove all pagination DOM elements
+  function cleanupAllElements() {
+    const elementsToRemove = [
+      'c1-pagination-progress',
+      'c1-pagination-result',
+      'c1-layout-info',
+      'c1-pagination-abort'
+    ];
+    elementsToRemove.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+  }
+
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Check for abort signal
+    if (!document.getElementById('c1-pagination-abort')) {
+      console.log('[Pagination Injected] Abort signal detected, stopping pagination');
+      cancelActiveTimeout();
+      cleanupAllElements();
+      break;
+    }
+
     let button = findViewMoreButton();
 
     if (!button) {
-      console.log('[Pagination Injected] Button not found on attempt', attempt + 1, '- retrying...');
+      console.log('[Pagination Injected] Button not found on attempt', attempt + 1, '/', maxAttempts, '- retrying with exponential backoff...');
 
+      // Exponential backoff: if React is still rendering, give it progressively more time
       for (let retry = 0; retry < MAX_RETRIES; retry++) {
-        await wait(RETRY_DELAY);
+        const retryWait = RETRY_DELAY * Math.pow(1.5, retry); // 300ms, 450ms, 675ms
+        await wait(retryWait);
         button = findViewMoreButton();
         if (button) {
-          console.log('[Pagination Injected] Button found after', retry + 1, 'retries, continuing...');
+          console.log('[Pagination Injected] ✓ Button found after', retry + 1, 'retries (waited', Math.round(retryWait) + 'ms), continuing...');
           break;
+        } else {
+          console.log('[Pagination Injected] Retry', retry + 1, '/', MAX_RETRIES, 'failed (waited', Math.round(retryWait) + 'ms)');
         }
       }
 
       if (!button) {
-        console.log('[Pagination Injected] Button still not found after retries - stopping');
+        console.log('[Pagination Injected] ✗ Button still not found after', MAX_RETRIES, 'retries - pagination complete');
+        console.log('[Pagination Injected] Total pages loaded:', pagesLoaded);
+        cancelActiveTimeout();
+        cleanupAllElements();
         break;
       }
     }
 
     if (consecutiveFailures >= maxConsecutiveFailures) {
       console.log('[Pagination Injected] Reached max consecutive failures (', maxConsecutiveFailures, ') - all offers loaded');
+      cancelActiveTimeout();
+      cleanupAllElements();
       break;
     }
 
     const beforeCount = countRealTiles();
-    console.log('[Pagination Injected] Attempt', attempt + 1, '- button found, current tiles:', beforeCount);
+    console.log('[Pagination Injected] ✓ Attempt', attempt + 1, '- button found, tiles before:', beforeCount, 'delay:', Math.round(currentDelay) + 'ms');
 
     const clickStartTime = Date.now();
 
@@ -151,8 +244,12 @@
 
     const afterCount = countRealTiles();
     const responseTime = Date.now() - clickStartTime;
-    console.log('[Pagination Injected] After wait, tiles:', afterCount, 'diff:', afterCount - beforeCount, 'response time:', responseTime, 'ms');
+    const tileDiff = afterCount - beforeCount;
+    console.log('[Pagination Injected] After wait, tiles:', afterCount, '(+' + tileDiff + ') response:', responseTime + 'ms');
 
+    // ====================================
+    // CHECK FOR NEW TILES
+    // ====================================
     if (afterCount > beforeCount) {
       pagesLoaded++;
       consecutiveFailures = 0;
@@ -172,14 +269,14 @@
       // Adaptive delay based on actual performance
       if (responseTime < FAST_THRESHOLD) {
         // Response was fast - speed up aggressively
-        currentDelay = Math.max(currentDelay * 0.85, MIN_DELAY);
-        console.log('[Pagination Injected] Fast response detected (', responseTime, 'ms) - reducing delay to', Math.round(currentDelay), 'ms');
+        currentDelay = Math.max(currentDelay * 0.75, MIN_DELAY);
+        console.log('[Pagination Injected] Fast response (', responseTime, 'ms) - reducing delay to', Math.round(currentDelay), 'ms');
       } else if (responseTime < SLOW_THRESHOLD) {
-        // Normal response - modest speedup
-        currentDelay = Math.max(currentDelay * 0.92, MIN_DELAY);
+        // Normal response - moderate speedup
+        currentDelay = Math.max(currentDelay * 0.88, MIN_DELAY);
         console.log('[Pagination Injected] Normal response (', responseTime, 'ms) - reducing delay to', Math.round(currentDelay), 'ms');
       } else {
-        // Slow response - don't change delay yet
+        // Slow response - maintain current delay
         console.log('[Pagination Injected] Slow response (', responseTime, 'ms) - keeping delay at', Math.round(currentDelay), 'ms');
       }
     } else {
@@ -199,10 +296,20 @@
   }
 
   console.log('[Pagination Injected] Pagination complete, pages loaded:', pagesLoaded);
+  cancelActiveTimeout(); // Clear any pending timeout
 
+  // Create result element (will be cleaned up by content script)
   const resultElement = document.createElement('div');
   resultElement.id = 'c1-pagination-result';
   resultElement.setAttribute('data-pages-loaded', pagesLoaded.toString());
   resultElement.style.display = 'none';
   document.body.appendChild(resultElement);
+
+  // Final cleanup of progress and layout elements (result element intentionally left for content script)
+  const progressEl = document.getElementById('c1-pagination-progress');
+  const layoutEl = document.getElementById('c1-layout-info');
+  const abortEl = document.getElementById('c1-pagination-abort');
+  if (progressEl) progressEl.remove();
+  if (layoutEl) layoutEl.remove();
+  if (abortEl) abortEl.remove();
 })();
