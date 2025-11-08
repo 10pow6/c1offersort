@@ -1,12 +1,7 @@
-import React from "react";
 import { VALID_URLS } from "@/utils/constants";
 import "./InvalidPageOverlay.css";
 
-/**
- * Full-page overlay component displayed when the extension is opened on a non-Capital One offers page.
- * Shows an error message and provides a button to navigate to the correct page.
- */
-export const InvalidPageOverlay: React.FC = () => {
+export const InvalidPageOverlay = () => {
   const handleGoToOffers = () => {
     window.open(VALID_URLS[0], "_blank");
   };

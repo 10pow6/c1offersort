@@ -33,6 +33,12 @@ export interface RemoveFavoritesRequestMessage {
   type: "REMOVE_FAVORITES_REQUEST";
 }
 
+export interface UpdateStarStateMessage {
+  type: "UPDATE_STAR_STATE";
+  merchantTLD: string;
+  isFavorited: boolean;
+}
+
 export interface SortCompleteMessage {
   type: "SORT_COMPLETE";
   result?: {
@@ -49,5 +55,6 @@ export type ExtensionMessage =
   | FilterRequestMessage
   | InjectFavoritesRequestMessage
   | RemoveFavoritesRequestMessage
+  | UpdateStarStateMessage
   | SortCompleteMessage;
 

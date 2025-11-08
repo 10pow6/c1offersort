@@ -1,19 +1,21 @@
 import { executeSorting } from '../modules/sorting/executeSorting';
 import { applyFavoritesFilter, loadAllOffers } from '../modules/favorites/filter';
 import { injectFavorites, removeFavoritesStars } from '../modules/favorites/inject';
+import { updateStarState } from '../modules/favorites/updateStarState';
+import { getWatcherCleanup } from '../index';
 
 /**
  * Sets up the Chrome message listener for handling requests from the popup.
  *
  * @param fullyPaginated - Reference to track if pagination is complete
- * @param processedTiles - Set to track which tiles have been processed
+ * @param processedTiles - WeakMap to track which tiles have been processed (auto GC)
  * @param favoritesObserver - Reference to the favorites MutationObserver
  * @param reinjectStarsCallback - Callback to re-inject stars after sorting
  * @param progressState - In-memory progress tracking state
  */
 export function setupMessageHandler(
   fullyPaginated: { value: boolean },
-  processedTiles: Set<string>,
+  processedTiles: WeakMap<HTMLElement, boolean>,
   favoritesObserver: { current: MutationObserver | null },
   reinjectStarsCallback: () => Promise<void>,
   progressState: {
@@ -86,7 +88,14 @@ export function setupMessageHandler(
         case 'INJECT_FAVORITES_REQUEST':
           return await injectFavorites(favoritesObserver);
         case 'REMOVE_FAVORITES_REQUEST':
+          const watcherCleanup = getWatcherCleanup();
+          if (watcherCleanup) {
+            watcherCleanup.cleanupAll();
+          }
           return await removeFavoritesStars(favoritesObserver);
+        case 'UPDATE_STAR_STATE':
+          updateStarState(message.merchantTLD, message.isFavorited);
+          return { success: true };
         case 'GET_SORT_PROGRESS':
           console.log('[MessageHandler] Processing GET_SORT_PROGRESS');
           return {

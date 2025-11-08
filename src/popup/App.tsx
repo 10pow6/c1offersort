@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useCurrentTab } from "./hooks/useCurrentTab";
 import { useSortOffers } from "./hooks/useSortOffers";
 import { useFavorites } from "./hooks/useFavorites";
@@ -45,7 +45,7 @@ const App: React.FC = () => {
   } = useSortOffers();
 
   console.log('[App] Render - isLoading:', isLoading, 'progressUpdate:', progressUpdate);
-  const { favorites, favoritesCount, refreshFavorites } = useFavorites();
+  const { favorites, favoritesCount, refreshFavorites } = useFavorites(currentUrl);
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(false);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -61,7 +61,6 @@ const App: React.FC = () => {
 
   const isValidUrl = useMemo(() => isValidCapitalOneUrl(currentUrl), [currentUrl]);
 
-  // Query content script for filter progress on mount
   useEffect(() => {
     async function queryFilterProgress() {
       try {
@@ -126,8 +125,10 @@ const App: React.FC = () => {
 
     chrome.runtime.onMessage.addListener(messageListener);
     return () => {
-      if (chrome?.runtime?.onMessage) {
+      try {
         chrome.runtime.onMessage.removeListener(messageListener);
+      } catch (error) {
+        console.log('[App] Failed to remove message listener (extension context may be invalidated):', error);
       }
     };
   }, []);
@@ -138,14 +139,19 @@ const App: React.FC = () => {
   }, [setSortConfig]);
 
   const handleOrderChange = useCallback((order: SortOrder) => {
-    setSortConfig({ ...sortConfig, order });
-  }, [sortConfig, setSortConfig]);
+    setSortConfig(prev => ({ ...prev, order }));
+  }, [setSortConfig]);
+
+  const favoritesEnabledRef = useRef(favoritesEnabled);
+  useEffect(() => {
+    favoritesEnabledRef.current = favoritesEnabled;
+  }, [favoritesEnabled]);
 
   const handleToggleFavorites = useCallback(async () => {
     setIsFavoritesLoading(true);
     setErrorMessage(null);
     try {
-      if (favoritesEnabled) {
+      if (favoritesEnabledRef.current) {
         const result = await removeFavoritesStarsInActiveTab();
         if (result.success) {
           setFavoritesEnabled(false);
@@ -174,10 +180,15 @@ const App: React.FC = () => {
     } finally {
       setIsFavoritesLoading(false);
     }
-  }, [favoritesEnabled, refreshFavorites]);
+  }, [refreshFavorites]);
+
+  const showFavoritesOnlyRef = useRef(showFavoritesOnly);
+  useEffect(() => {
+    showFavoritesOnlyRef.current = showFavoritesOnly;
+  }, [showFavoritesOnly]);
 
   const handleToggleFavoritesFilter = useCallback(async () => {
-    const newShowFavoritesOnly = !showFavoritesOnly;
+    const newShowFavoritesOnly = !showFavoritesOnlyRef.current;
     setIsFilterLoading(true);
     setLoadAllProgress(null);
     setErrorMessage(null);
@@ -210,7 +221,7 @@ const App: React.FC = () => {
       setIsFilterLoading(false);
       setLoadAllProgress(null);
     }
-  }, [showFavoritesOnly]);
+  }, []);
 
   return (
     <div
@@ -571,6 +582,7 @@ const App: React.FC = () => {
                       favorites={favorites}
                       missingFavorites={missingFavorites}
                       onRemove={refreshFavorites}
+                      currentUrl={currentUrl}
                     />
                   </div>
                 )}

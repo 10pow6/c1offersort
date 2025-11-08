@@ -1,8 +1,22 @@
 import { isContextInvalidatedError, safeStorageGet, safeStorageSet } from '../utils/contextCheck';
 
-const STORAGE_KEY = "c1-offers-favorites";
+const STORAGE_KEY_FEED = "c1-offers-favorites-feed";
+const STORAGE_KEY_C1OFFERS = "c1-offers-favorites-c1offers";
 const MAX_FAVORITES = 1000;
 const MAX_STORAGE_SIZE = 1000000;
+
+/**
+ * Determines the storage key based on the current URL
+ * /feed and /c1-offers have separate favorites storage
+ */
+function getStorageKey(): string {
+  const url = window.location.href;
+  if (url.includes('/c1-offers')) {
+    return STORAGE_KEY_C1OFFERS;
+  }
+  // Default to feed (includes /feed and any other Capital One offers URLs)
+  return STORAGE_KEY_FEED;
+}
 
 export interface Favorite {
   merchantTLD: string;
@@ -25,8 +39,13 @@ export function sanitizeMerchantName(merchantName: string): string {
 }
 
 export function sanitizeMileageValue(mileageValue: string): string {
-  const sanitized = sanitizeString(mileageValue, 100);
-  if (!/\d+[,\d]*\s*(?:X\s*)?miles/i.test(sanitized) && sanitized !== "0 miles") {
+  const sanitized = sanitizeString(mileageValue, 100).trim();
+
+  // Accept both miles (e.g., "2X miles", "60,000 miles") and cashback (e.g., "4% back", "Up to 52% back")
+  const isValidMiles = /\d+[,\d]*\s*(?:X\s*)?miles/i.test(sanitized);
+  const isValidCashback = /(?:up\s+to\s+)?\d+(?:\.\d+)?%\s+back/i.test(sanitized);
+
+  if (!isValidMiles && !isValidCashback && sanitized !== "0 miles") {
     return "0 miles";
   }
   return sanitized;
@@ -34,8 +53,9 @@ export function sanitizeMileageValue(mileageValue: string): string {
 
 export async function getFavorites(): Promise<Favorite[]> {
   try {
-    const result = await safeStorageGet(STORAGE_KEY, { [STORAGE_KEY]: [] });
-    return result[STORAGE_KEY] || [];
+    const storageKey = getStorageKey();
+    const result = await safeStorageGet(storageKey, { [storageKey]: [] });
+    return result[storageKey] || [];
   } catch (error) {
     if (isContextInvalidatedError(error)) {
       console.warn('[Favorites] Extension context invalidated, returning empty favorites');
@@ -57,7 +77,8 @@ export async function saveFavorites(favorites: Favorite[]): Promise<void> {
       throw new Error('Favorites storage too large');
     }
 
-    const success = await safeStorageSet({ [STORAGE_KEY]: favorites });
+    const storageKey = getStorageKey();
+    const success = await safeStorageSet({ [storageKey]: favorites });
     if (!success) {
       console.warn('[Favorites] Save skipped - extension context invalidated');
     }
@@ -134,18 +155,21 @@ export async function toggleFavorite(
   throw new Error("Failed to toggle favorite after retries");
 }
 
-/**
- * Creates a star button for an offer tile with proper event listener cleanup
- */
 export function createStarButton(
+  _tile: HTMLElement,
   merchantTLD: string,
   merchantName: string,
-  mileageValue: string,
   isInitiallyFavorited: boolean
 ): HTMLButtonElement {
   const button = document.createElement("button");
   button.className = "c1-favorite-star";
   button.textContent = isInitiallyFavorited ? "★" : "☆";
+
+  // Store data for event delegation
+  button.setAttribute("data-merchant-tld", merchantTLD);
+  button.setAttribute("data-merchant-name", merchantName);
+  button.setAttribute("data-favorited", isInitiallyFavorited ? "true" : "false");
+
   button.setAttribute(
     "aria-label",
     isInitiallyFavorited ? "Unfavorite offer" : "Favorite offer"
@@ -155,6 +179,7 @@ export function createStarButton(
     isInitiallyFavorited ? "Remove from favorites" : "Add to favorites"
   );
 
+  // Base styles (no transitions - use CSS :hover instead for better performance)
   button.style.cssText = `
     position: absolute;
     top: 8px;
@@ -171,41 +196,10 @@ export function createStarButton(
     font-size: 18px;
     line-height: 1;
     padding: 0;
-    transition: all 0.2s ease;
     z-index: 10;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   `;
-
-  const abortController = new AbortController();
-  const signal = abortController.signal;
-
-  button.addEventListener("mouseenter", () => {
-    button.style.transform = "scale(1.1)";
-    button.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.15)";
-  }, { signal });
-
-  button.addEventListener("mouseleave", () => {
-    button.style.transform = "scale(1)";
-    button.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
-  }, { signal });
-
-  button.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    const nowFavorited = await toggleFavorite(merchantTLD, merchantName, mileageValue);
-    button.textContent = nowFavorited ? "★" : "☆";
-    button.setAttribute(
-      "aria-label",
-      nowFavorited ? "Unfavorite offer" : "Favorite offer"
-    );
-    button.setAttribute(
-      "title",
-      nowFavorited ? "Remove from favorites" : "Add to favorites"
-    );
-  }, { signal });
-
-  (button as any).__abortController = abortController;
 
   return button;
 }

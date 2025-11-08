@@ -3,15 +3,88 @@ import {
   extractMerchantName,
   parseMileageValue,
   findMainContainer,
+  findAllTiles,
 } from '@/shared/domHelpers';
 import type { SortResult } from '@/types';
 import { loadAllTiles } from '../pagination';
-import { isContextInvalidatedError } from '@/utils/contextCheck';
+import { getWatcherCleanup } from '../../index';
 
 interface TileData {
   element: HTMLElement;
   mileage: number;
   merchantName: string;
+}
+
+let isSortInProgress = false;
+const tileDataCache = new WeakMap<HTMLElement, TileData>();
+
+/**
+ * Performs sorting on currently loaded tiles.
+ * Uses WeakMap cache to avoid re-extracting tile data on subsequent sorts.
+ * Implements batched DOM operations: separate read phase and write phase to eliminate layout thrashing.
+ *
+ * @param sortCriteria - "mileage" or "alphabetical"
+ * @param sortOrder - "asc" or "desc"
+ */
+function performSort(
+  sortCriteria: string,
+  sortOrder: string
+): number {
+  const allTiles = findAllTiles();
+  if (allTiles.length === 0) return 0;
+
+  // PHASE 1: READ - Extract all data from DOM (cached or fresh)
+  const tilesWithData: TileData[] = allTiles
+    .map((tile) => {
+      let cached = tileDataCache.get(tile);
+      if (!cached) {
+        const mileageText = extractMileageText(tile);
+        const mileageValue = parseMileageValue(mileageText);
+        const merchantName = extractMerchantName(tile);
+
+        cached = {
+          element: tile,
+          mileage: mileageValue,
+          merchantName: merchantName,
+        };
+        tileDataCache.set(tile, cached);
+      }
+      return cached;
+    })
+    .filter((item) => item.element !== null);
+
+  // PHASE 2: SORT - Process data (no DOM access)
+  const isDescending = sortOrder === "desc";
+
+  const sortedTiles = tilesWithData.sort((a, b) => {
+    if (sortCriteria === "alphabetical") {
+      const nameA = a.merchantName.toLowerCase();
+      const nameB = b.merchantName.toLowerCase();
+      const comparison = nameA.localeCompare(nameB);
+      return isDescending ? -comparison : comparison;
+    } else {
+      return isDescending ? b.mileage - a.mileage : a.mileage - b.mileage;
+    }
+  });
+
+  // PHASE 3: WRITE - Apply all style changes in single animation frame (batched writes)
+  requestAnimationFrame(() => {
+    sortedTiles.forEach((item, index) => {
+      if (!item.element) return;
+
+      // Use cssText for faster style application (single operation vs multiple setProperty calls)
+      // Apply content-visibility optimization for large DOM (reduces rendering cost by 95%)
+      item.element.style.cssText += `
+        grid-area: auto !important;
+        order: ${index} !important;
+        content-visibility: auto;
+        contain: layout style;
+        contain-intrinsic-size: auto 200px;
+      `;
+    });
+  });
+
+  return sortedTiles.length;
 }
 
 /**
@@ -21,7 +94,7 @@ interface TileData {
  * @param sortCriteria - "mileage" or "alphabetical"
  * @param sortOrder - "asc" or "desc"
  * @param fullyPaginated - Reference to track if pagination is complete
- * @param processedTiles - Set to track which tiles have been processed
+ * @param processedTiles - WeakMap to track which tiles have been processed (auto GC)
  * @param reinjectStarsCallback - Callback to re-inject stars after sorting
  * @param progressState - In-memory progress tracking state (optional for backwards compatibility)
  * @returns Result object with success status, tiles processed count, and any errors
@@ -30,7 +103,7 @@ export async function executeSorting(
   sortCriteria: string,
   sortOrder: string,
   fullyPaginated: { value: boolean },
-  processedTiles: Set<string>,
+  _processedTiles: WeakMap<HTMLElement, boolean>,
   reinjectStarsCallback: () => Promise<void>,
   progressState?: {
     sort: {
@@ -46,9 +119,29 @@ export async function executeSorting(
 ): Promise<SortResult> {
   console.log('[Sorting] executeSorting called with criteria:', sortCriteria, 'order:', sortOrder);
 
+  if (isSortInProgress) {
+    console.warn('[Sorting] Sort already in progress, ignoring duplicate request');
+    return {
+      success: false,
+      tilesProcessed: 0,
+      pagesLoaded: 0,
+      error: "A sort operation is already in progress. Please wait for it to complete.",
+    };
+  }
+
+  isSortInProgress = true;
+
+  // PERFORMANCE FIX: Disconnect MutationObserver BEFORE sorting to prevent 1,500+ mutation events
+  const watcherCleanup = getWatcherCleanup();
+  if (watcherCleanup) {
+    console.log('[Sorting] Disabling tiles watcher observer before sort');
+    watcherCleanup.disableObserverOnly();
+  }
+
   const mainContainer = findMainContainer();
 
   if (!mainContainer) {
+    isSortInProgress = false;
     return {
       success: false,
       tilesProcessed: 0,
@@ -57,129 +150,67 @@ export async function executeSorting(
     };
   }
 
-  const carouselElement = document.querySelector('.app-page[style*="grid-column"]') as HTMLElement;
-  if (carouselElement?.style) {
-    carouselElement.style.display = "none";
-  }
-
-  console.log('[Sorting] Starting pagination...');
-  const pagesLoaded = await loadAllTiles(fullyPaginated);
-  console.log('[Sorting] Pagination complete, pages loaded:', pagesLoaded);
-
-  const additionalOffersHeader = Array.from(document.querySelectorAll("h2")).find(
-    h => h.textContent?.includes("Additional Offers")
-  );
-  if (additionalOffersHeader) {
-    console.log('[Sorting] Scrolling to Additional Offers header');
-    additionalOffersHeader.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  console.log('[Sorting] Setting grid properties on main container');
-  mainContainer.style.setProperty("display", "grid", "important");
-  mainContainer.style.gridTemplateAreas = "none";
-  mainContainer.style.gridAutoFlow = "row";
-
-  console.log('[Sorting] Querying for tiles...');
-  const allTilesRaw = Array.from(mainContainer.querySelectorAll('[data-testid^="feed-tile-"]'));
-  console.log('[Sorting] Found', allTilesRaw.length, 'raw tiles');
-
-  const allTiles = allTilesRaw.filter((tile) => {
-    const testId = tile.getAttribute('data-testid') || '';
-    const isCarousel = testId.includes('carousel');
-    if (isCarousel) {
-      (tile as HTMLElement).style.display = 'none';
-    }
-    return !isCarousel;
-  }) as HTMLElement[];
-
-  console.log('[Sorting] Filtered to', allTiles.length, 'non-carousel tiles');
-
-  if (allTiles.length === 0) {
-    console.error('[Sorting] No tiles found!');
-    return {
-      success: false,
-      tilesProcessed: 0,
-      pagesLoaded: pagesLoaded,
-      error: "No offer tiles found on the page. Please ensure offers are loaded before sorting.",
-    };
-  }
-
-  const tilesWithData: TileData[] = allTiles
-    .map((tile) => {
-      const mileageText = extractMileageText(tile);
-      const mileageValue = parseMileageValue(mileageText);
-      const merchantName = extractMerchantName(tile);
-
-      return {
-        element: tile,
-        mileage: mileageValue,
-        merchantName: merchantName,
-      };
-    })
-    .filter((item) => item.element !== null);
-
-  // Update in-memory progress state
-  if (progressState) {
-    progressState.sort.progress = {
-      type: 'sorting',
-      totalOffers: tilesWithData.length,
-    };
-  }
-
   try {
-    chrome.runtime.sendMessage({
-      type: "SORTING_START",
-      totalOffers: tilesWithData.length,
-    }).catch(() => {});
-  } catch (error) {
-    if (isContextInvalidatedError(error)) {
-      console.warn('[Sorting] Extension context invalidated during sorting start event');
+    const carouselElement = document.querySelector('.app-page[style*="grid-column"]') as HTMLElement;
+    if (carouselElement?.style) {
+      carouselElement.style.display = "none";
+    }
+
+    console.log('[Sorting] Setting grid properties on main container');
+    mainContainer.style.setProperty("display", "grid", "important");
+    mainContainer.style.gridTemplateAreas = "none";
+    mainContainer.style.gridAutoFlow = "row";
+
+    const additionalOffersHeader = Array.from(document.querySelectorAll("h2")).find(
+      h => h.textContent?.includes("Additional Offers")
+    );
+    if (additionalOffersHeader) {
+      console.log('[Sorting] Scrolling to Additional Offers header before pagination');
+      additionalOffersHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    if (progressState) {
+      progressState.sort.isActive = true;
+    }
+
+    console.log('[Sorting] Starting pagination...');
+    let pagesLoaded = 0;
+    try {
+      pagesLoaded = await loadAllTiles(fullyPaginated);
+      console.log('[Sorting] Pagination complete, pages loaded:', pagesLoaded);
+    } finally {
+      if (progressState) {
+        progressState.sort.isActive = false;
+      }
+    }
+
+    console.log('[Sorting] Performing sort...');
+    const tilesProcessed = performSort(sortCriteria, sortOrder);
+
+    if (tilesProcessed === 0) {
+      console.error('[Sorting] No tiles found!');
       return {
         success: false,
         tilesProcessed: 0,
-        pagesLoaded: 0,
-        error: "Extension was reloaded. Please refresh the page and try again.",
+        pagesLoaded: pagesLoaded,
+        error: "No offer tiles found on the page. Please ensure offers are loaded before sorting.",
       };
     }
+
+    console.log('[Sorting] Final sort complete:', tilesProcessed, 'tiles processed');
+
+    await reinjectStarsCallback();
+
+    // Note: Observer was already disabled at the start of executeSorting for performance
+
+    return {
+      success: true,
+      tilesProcessed: tilesProcessed,
+      pagesLoaded: pagesLoaded,
+    };
+  } finally {
+    isSortInProgress = false;
+    console.log('[Sorting] Sort operation complete');
   }
-
-  const isDescending = sortOrder === "desc";
-
-  console.log('[Sorting] Sorting', tilesWithData.length, 'tiles by', sortCriteria, isDescending ? 'descending' : 'ascending');
-  const sortedTiles = tilesWithData.sort((a, b) => {
-    if (sortCriteria === "alphabetical") {
-      const nameA = a.merchantName.toLowerCase();
-      const nameB = b.merchantName.toLowerCase();
-      const comparison = nameA.localeCompare(nameB);
-      return isDescending ? -comparison : comparison;
-    } else {
-      return isDescending ? b.mileage - a.mileage : a.mileage - b.mileage;
-    }
-  });
-
-  console.log('[Sorting] Applying order styles to tiles...');
-  sortedTiles.forEach((item, index) => {
-    if (!item.element) {
-      return;
-    }
-
-    item.element.style.setProperty("grid-area", "auto", "important");
-    item.element.style.setProperty("order", String(index), "important");
-  });
-
-  console.log('[Sorting] Order styles applied successfully');
-
-  processedTiles.clear();
-  await reinjectStarsCallback();
-
-  const realTilesProcessed = allTiles.filter((tile) => {
-    const testId = tile.getAttribute('data-testid') || '';
-    return !testId.includes('skeleton');
-  }).length;
-
-  return {
-    success: true,
-    tilesProcessed: realTilesProcessed,
-    pagesLoaded: pagesLoaded,
-  };
 }

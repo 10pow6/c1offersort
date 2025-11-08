@@ -2,11 +2,26 @@ import type { FavoritedOffer } from "../types";
 import { getWithTimeout, setWithTimeout, isStorageTimeoutError } from "./storageWithTimeout";
 import { FavoritesError, FavoritesErrorCode } from "./favoritesErrors";
 
-const STORAGE_KEY = "c1-offers-favorites";
+const STORAGE_KEY_FEED = "c1-offers-favorites-feed";
+const STORAGE_KEY_C1OFFERS = "c1-offers-favorites-c1offers";
 const MAX_FAVORITES = 1000;
 const MAX_STORAGE_SIZE = 1000000;
 
-async function saveFavorites(favorites: FavoritedOffer[]): Promise<void> {
+/**
+ * Determines the storage key based on the current URL
+ * /feed and /c1-offers have separate favorites storage
+ * @param url - Optional URL to check. If not provided, uses window.location.href
+ */
+function getStorageKey(url?: string): string {
+  const targetUrl = url || window.location.href;
+  if (targetUrl.includes('/c1-offers')) {
+    return STORAGE_KEY_C1OFFERS;
+  }
+  // Default to feed (includes /feed and any other Capital One offers URLs)
+  return STORAGE_KEY_FEED;
+}
+
+async function saveFavorites(favorites: FavoritedOffer[], url?: string): Promise<void> {
   if (favorites.length > MAX_FAVORITES) {
     throw new FavoritesError(
       `Cannot save more than ${MAX_FAVORITES} favorites`,
@@ -25,7 +40,8 @@ async function saveFavorites(favorites: FavoritedOffer[]): Promise<void> {
   }
 
   try {
-    await setWithTimeout({ [STORAGE_KEY]: favorites });
+    const storageKey = getStorageKey(url);
+    await setWithTimeout({ [storageKey]: favorites });
   } catch (error) {
     if (isStorageTimeoutError(error)) {
       throw new FavoritesError(
@@ -42,10 +58,11 @@ async function saveFavorites(favorites: FavoritedOffer[]): Promise<void> {
   }
 }
 
-export async function getFavorites(): Promise<FavoritedOffer[]> {
+export async function getFavorites(url?: string): Promise<FavoritedOffer[]> {
   try {
-    const result = await getWithTimeout(STORAGE_KEY);
-    const stored = result[STORAGE_KEY];
+    const storageKey = getStorageKey(url);
+    const result = await getWithTimeout(storageKey);
+    const stored = result[storageKey];
 
     if (!stored) return [];
     if (!Array.isArray(stored)) {
@@ -75,8 +92,8 @@ export async function getFavorites(): Promise<FavoritedOffer[]> {
   }
 }
 
-export async function isFavorited(merchantTLD: string): Promise<boolean> {
-  const favorites = await getFavorites();
+export async function isFavorited(merchantTLD: string, url?: string): Promise<boolean> {
+  const favorites = await getFavorites(url);
   return favorites.some(fav => fav.merchantTLD === merchantTLD);
 }
 
@@ -88,13 +105,14 @@ export async function isFavorited(merchantTLD: string): Promise<boolean> {
  * Retries up to 3 times with exponential backoff if conflicts are detected.
  *
  * @param offer - The offer to favorite (favoritedAt timestamp added automatically)
+ * @param url - Optional URL to determine which storage key to use
  * @throws {FavoritesError} If the offer cannot be added after all retries
  */
-export async function addFavorite(offer: Omit<FavoritedOffer, "favoritedAt">): Promise<void> {
+export async function addFavorite(offer: Omit<FavoritedOffer, "favoritedAt">, url?: string): Promise<void> {
   const MAX_RETRIES = 3;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const favorites = await getFavorites();
+    const favorites = await getFavorites(url);
     const originalLength = favorites.length;
 
     if (favorites.some(fav => fav.merchantTLD === offer.merchantTLD)) {
@@ -107,9 +125,9 @@ export async function addFavorite(offer: Omit<FavoritedOffer, "favoritedAt">): P
     };
 
     const updated = [...favorites, newFavorite];
-    await saveFavorites(updated);
+    await saveFavorites(updated, url);
 
-    const verify = await getFavorites();
+    const verify = await getFavorites(url);
     if (verify.length === originalLength + 1) {
       return;
     }
@@ -134,13 +152,14 @@ export async function addFavorite(offer: Omit<FavoritedOffer, "favoritedAt">): P
  * Retries up to 3 times with exponential backoff if conflicts are detected.
  *
  * @param merchantTLD - The merchant TLD of the offer to remove
+ * @param url - Optional URL to determine which storage key to use
  * @throws {FavoritesError} If the offer cannot be removed after all retries
  */
-export async function removeFavorite(merchantTLD: string): Promise<void> {
+export async function removeFavorite(merchantTLD: string, url?: string): Promise<void> {
   const MAX_RETRIES = 3;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const favorites = await getFavorites();
+    const favorites = await getFavorites(url);
     const originalLength = favorites.length;
     const filtered = favorites.filter(fav => fav.merchantTLD !== merchantTLD);
 
@@ -148,9 +167,9 @@ export async function removeFavorite(merchantTLD: string): Promise<void> {
       return;
     }
 
-    await saveFavorites(filtered);
+    await saveFavorites(filtered, url);
 
-    const verify = await getFavorites();
+    const verify = await getFavorites(url);
     if (verify.length === originalLength - 1) {
       return;
     }
@@ -171,15 +190,16 @@ export async function removeFavorite(merchantTLD: string): Promise<void> {
  * Toggles a favorite offer - adds it if not present, removes it if present.
  *
  * @param offer - The offer to toggle
+ * @param url - Optional URL to determine which storage key to use
  * @returns true if the offer was added, false if it was removed
  * @throws {FavoritesError} If the operation fails
  */
-export async function toggleFavorite(offer: Omit<FavoritedOffer, "favoritedAt">): Promise<boolean> {
-  if (await isFavorited(offer.merchantTLD)) {
-    await removeFavorite(offer.merchantTLD);
+export async function toggleFavorite(offer: Omit<FavoritedOffer, "favoritedAt">, url?: string): Promise<boolean> {
+  if (await isFavorited(offer.merchantTLD, url)) {
+    await removeFavorite(offer.merchantTLD, url);
     return false;
   } else {
-    await addFavorite(offer);
+    await addFavorite(offer, url);
     return true;
   }
 }

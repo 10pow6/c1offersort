@@ -32,22 +32,12 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
-        content: path.resolve(__dirname, 'src/content/index.ts'),
         'injected-scripts/pagination': path.resolve(__dirname, 'src/injected-scripts/pagination.ts'),
       },
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
-        // Force background worker to be inlined (no code splitting)
-        manualChunks: (id) => {
-          // Background worker must be standalone - no separate chunks
-          if (id.includes('src/background')) {
-            return undefined;
-          }
-        },
-        // Inline dynamic imports for background worker
-        inlineDynamicImports: false,
       },
       treeshake: {
         moduleSideEffects: 'no-external',

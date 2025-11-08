@@ -1,4 +1,3 @@
-import React from "react";
 import type { SortResult } from "@/types";
 import "./StatusMessage.css";
 
@@ -23,14 +22,14 @@ interface StatusMessageProps {
   showFavoritesOnly?: boolean;
 }
 
-export const StatusMessage: React.FC<StatusMessageProps> = ({
+export const StatusMessage = ({
   result,
   progress,
   isLoading,
   loadAllProgress,
   isLoadingAll,
   showFavoritesOnly
-}) => {
+}: StatusMessageProps) => {
   if (isLoadingAll && loadAllProgress) {
     return (
       <div className="status-message progress">
@@ -40,21 +39,13 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     );
   }
 
-  if (isLoading && progress) {
-    if (progress.type === "pagination") {
-      return (
-        <div className="status-message progress">
-          {progress.offersLoaded} loaded so far
-          {progress.pagesLoaded && progress.pagesLoaded > 0 && ` (page ${progress.pagesLoaded})`}
-        </div>
-      );
-    } else if (progress.type === "sorting") {
-      return (
-        <div className="status-message progress">
-          Sorting {progress.totalOffers} offers...
-        </div>
-      );
-    }
+  if (isLoading && progress && progress.type === "pagination") {
+    return (
+      <div className="status-message progress">
+        Loading... {progress.offersLoaded} offers
+        {progress.pagesLoaded && progress.pagesLoaded > 0 && ` (page ${progress.pagesLoaded})`}
+      </div>
+    );
   }
 
   if (showFavoritesOnly && !isLoading && !isLoadingAll) {

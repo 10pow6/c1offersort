@@ -1,4 +1,5 @@
-const MILEAGE_PATTERN = /\d+[,\d]*\s*(?:X\s*)?miles/i;
+import { SELECTORS } from "../utils/constants";
+
 const MULTIPLIER_PATTERN = /(\d+)X\s+miles/i;
 const MILES_PATTERN = /(?:Up to )?([0-9,]+)\s+miles/i;
 const MAX_BASE64_LENGTH = 10000;
@@ -16,6 +17,38 @@ export function isCarouselTile(tile: Element): boolean {
 
 export function shouldExcludeTile(tile: Element): boolean {
   return isSkeletonTile(tile) || isCarouselTile(tile);
+}
+
+// Cache tile IDs to avoid expensive O(n²) lookups
+const tileIdCache = new WeakMap<HTMLElement, string>();
+
+/**
+ * Generate a unique ID for a tile
+ * Uses data-testid if available, otherwise creates ID from merchant name and cached index
+ * PERFORMANCE: Uses WeakMap cache to avoid O(n²) querySelectorAll + indexOf operations
+ */
+export function getTileId(tile: HTMLElement): string {
+  // Check cache first
+  const cached = tileIdCache.get(tile);
+  if (cached) {
+    return cached;
+  }
+
+  const testId = tile.getAttribute('data-testid');
+  if (testId) {
+    tileIdCache.set(tile, testId);
+    return testId;
+  }
+
+  // For tiles without data-testid (e.g., /c1-offers), create ID from merchant name
+  // PERFORMANCE FIX: Don't use indexOf (O(n²)), just use element reference
+  const merchantName = extractMerchantName(tile);
+
+  // Use element's own properties for uniqueness instead of expensive indexOf
+  const uniqueId = `tile-${merchantName}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`.replace(/\s+/g, '-');
+
+  tileIdCache.set(tile, uniqueId);
+  return uniqueId;
 }
 
 export function countRealTiles(): number {
@@ -160,30 +193,13 @@ export function extractMerchantName(tile: HTMLElement): string {
 }
 
 export function extractMileageText(tile: HTMLElement): string {
-  let mileageText = "0 miles";
-
-  const walker = document.createTreeWalker(
-    tile,
-    NodeFilter.SHOW_TEXT,
-    null
-  );
-  let node;
-  while ((node = walker.nextNode())) {
-    const text = node.textContent || "";
-    if (MILEAGE_PATTERN.test(text)) {
-      mileageText = text;
-      break;
-    }
+  // Use style attribute for mileage (green color: rgb(37, 129, 14))
+  const mileageDiv = tile.querySelector(SELECTORS.mileageText) as HTMLElement;
+  if (mileageDiv?.textContent) {
+    return mileageDiv.textContent.trim();
   }
 
-  if (mileageText === "0 miles") {
-    const mileageDiv =
-      tile.querySelector('div.border-none.bg-none[class*="font-semibold"]') ||
-      tile.querySelector('div[style*="color: rgb(37, 129, 14)"]');
-    mileageText = mileageDiv ? mileageDiv.textContent || "0 miles" : "0 miles";
-  }
-
-  return mileageText;
+  return "0 miles";
 }
 
 export function parseMileageValue(text: string): number {
@@ -202,76 +218,75 @@ export function parseMileageValue(text: string): number {
   return 0;
 }
 
+// Cache container to avoid repeated DOM queries
+let cachedContainer: HTMLElement | null = null;
+let lastContainerCheck = 0;
+const CONTAINER_CACHE_TTL = 5000; // Cache for 5 seconds
+
+/**
+ * Clear the cached container (useful when page structure changes)
+ */
+export function clearContainerCache(): void {
+  cachedContainer = null;
+  lastContainerCheck = 0;
+}
+
 export function findMainContainer(): HTMLElement | null {
-  const firstTile = document.querySelector('[data-testid^="feed-tile-"]');
-  if (firstTile && firstTile.parentElement) {
-    const container = firstTile.parentElement;
-    const tilesInContainer = container.querySelectorAll('[data-testid^="feed-tile-"]');
-    if (tilesInContainer.length > 1) {
-      return container as HTMLElement;
+  // Return cached container if still valid
+  const now = Date.now();
+  if (cachedContainer && (now - lastContainerCheck) < CONTAINER_CACHE_TTL) {
+    return cachedContainer;
+  }
+
+  const container = document.querySelector(SELECTORS.container) as HTMLElement;
+
+  if (container) {
+    // Only log on first find or after cache expires
+    if (!cachedContainer) {
+      console.log('[DOMHelpers] Found offers container');
     }
+    cachedContainer = container;
+    lastContainerCheck = now;
+    return container;
   }
 
-  const heading = Array.from(document.querySelectorAll("h2")).find(
-    h => h.textContent && h.textContent.includes("Additional Offers")
-  );
-  if (heading) {
-    const parent = heading.parentElement;
-    const gridInParent = parent ? parent.querySelector('[class*="grid"]') : null;
-    if (gridInParent) return gridInParent as HTMLElement;
-  }
-
-  const containers = Array.from(document.querySelectorAll('[class*="grid"]'));
-  for (const container of containers) {
-    const tiles = container.querySelectorAll('[data-testid^="feed-tile-"]');
-    if (tiles.length > 10) {
-      return container as HTMLElement;
-    }
-  }
-
-  return document.querySelector('[class*="grid"][class*="gap"][class*="h-full"][class*="w-full"]') as HTMLElement | null;
+  return null;
 }
 
 /**
  * Finds the "View More Offers" pagination button
  */
+/**
+ * Find all offer tiles in the main container using layout-specific selectors
+ * @param suppressWarning - If true, don't log warning when container not found (useful during initial page load)
+ */
+export function findAllTiles(suppressWarning = false): HTMLElement[] {
+  const container = findMainContainer();
+
+  if (!container) {
+    if (!suppressWarning) {
+      console.warn('[DOMHelpers] Cannot find tiles - no container found');
+    }
+    return [];
+  }
+
+  const tiles = Array.from(container.querySelectorAll(SELECTORS.offerTile)) as HTMLElement[];
+  // PERFORMANCE: Don't log on every call (called 20+ times during sort)
+  return tiles;
+}
+
 export function findViewMoreButton(): HTMLButtonElement | null {
-  const allButtons = document.querySelectorAll("button");
-
-  console.log('[DOMHelpers] Finding "View More Offers" button:', {
-    totalButtons: allButtons.length,
-    buttonTexts: Array.from(allButtons).slice(0, 10).map(btn => ({
-      text: btn.textContent?.trim(),
-      visible: btn.offsetParent !== null
-    }))
-  });
-
-  let button = Array.from(allButtons).find(
-    btn => btn.textContent && btn.textContent.trim() === "View More Offers"
-  );
+  const button = document.querySelector(SELECTORS.viewMoreButton) as HTMLButtonElement;
 
   if (button) {
-    console.log('[DOMHelpers] Found exact match button:', {
+    console.log('[DOMHelpers] Found "View More Offers" button:', {
       text: button.textContent?.trim(),
       visible: button.offsetParent !== null,
       disabled: button.hasAttribute('disabled')
     });
-    return button as HTMLButtonElement;
+    return button;
   }
 
-  button = Array.from(allButtons).find(
-    btn => btn.textContent && btn.textContent.includes("View More")
-  );
-
-  if (button) {
-    console.log('[DOMHelpers] Found partial match button:', {
-      text: button.textContent?.trim(),
-      visible: button.offsetParent !== null,
-      disabled: button.hasAttribute('disabled')
-    });
-  } else {
-    console.log('[DOMHelpers] No "View More" button found');
-  }
-
-  return (button as HTMLButtonElement) || null;
+  console.log('[DOMHelpers] No "View More" button found');
+  return null;
 }

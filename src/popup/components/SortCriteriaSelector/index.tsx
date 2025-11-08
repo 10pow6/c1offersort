@@ -1,4 +1,4 @@
-import React from "react";
+import type { ChangeEvent } from "react";
 import type { SortCriteria } from "@/types";
 import "./SortCriteriaSelector.css";
 
@@ -7,19 +7,11 @@ interface SortCriteriaSelectorProps {
   onChange: (criteria: SortCriteria) => void;
 }
 
-/**
- * Radio button group component for selecting sort criteria.
- * Allows users to choose between sorting by mileage value or merchant name.
- * Uses semantic fieldset/legend elements for accessibility.
- *
- * @param sortCriteria - Currently selected sort criteria
- * @param onChange - Callback function when criteria selection changes
- */
-export const SortCriteriaSelector: React.FC<SortCriteriaSelectorProps> = ({
+export const SortCriteriaSelector = ({
   sortCriteria,
   onChange,
-}) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+}: SortCriteriaSelectorProps) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value as SortCriteria);
   };
 

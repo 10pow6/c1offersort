@@ -1,7 +1,6 @@
-import React from "react";
 import "./BuyMeCoffee.css";
 
-export const BuyMeCoffee: React.FC = () => {
+export const BuyMeCoffee = () => {
   return (
     <div className="buy-me-coffee">
       <a
