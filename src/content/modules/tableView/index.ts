@@ -16,16 +16,34 @@ interface OfferData {
   mileage: string;
   merchantTLD: string;
   logoUrl?: string;
-  offerType?: string; // "Online", "In-Store", "In-Store & Online"
-  order?: number; // CSS order property from sorting
+  offerType?: string;
+  order?: number;
 }
 
+interface TileState {
+  originalStyles: {
+    position: string;
+    top: string;
+    left: string;
+    width: string;
+    height: string;
+    opacity: string;
+    pointerEvents: string;
+    zIndex: string;
+    display: string;
+  };
+}
+
+// State management
 let currentPage = 1;
 let totalPages = 1;
 let allOffers: OfferData[] = [];
 
+// Store tile state in memory instead of DOM attributes
+const tileStateMap = new WeakMap<HTMLElement, TileState>();
+
 /**
- * Check if favorites are enabled by looking for stars in tiles
+ * Check if favorites are enabled
  */
 async function areFavoritesEnabled(): Promise<boolean> {
   try {
@@ -80,6 +98,66 @@ function extractOfferData(): OfferData[] {
   return offerData.sort((a, b) => (a.order || 0) - (b.order || 0));
 }
 
+/**
+ * Saves tile's current inline styles to memory (not DOM)
+ */
+function saveTileState(tile: HTMLElement): void {
+  if (tileStateMap.has(tile)) {
+    return; // Already saved
+  }
+
+  const state: TileState = {
+    originalStyles: {
+      position: tile.style.position,
+      top: tile.style.top,
+      left: tile.style.left,
+      width: tile.style.width,
+      height: tile.style.height,
+      opacity: tile.style.opacity,
+      pointerEvents: tile.style.pointerEvents,
+      zIndex: tile.style.zIndex,
+      display: tile.style.display,
+    },
+  };
+
+  tileStateMap.set(tile, state);
+}
+
+/**
+ * Restores tile's original inline styles from memory
+ */
+function restoreTileState(tile: HTMLElement): void {
+  const state = tileStateMap.get(tile);
+  if (!state) {
+    return;
+  }
+
+  const { originalStyles } = state;
+  tile.style.position = originalStyles.position;
+  tile.style.top = originalStyles.top;
+  tile.style.left = originalStyles.left;
+  tile.style.width = originalStyles.width;
+  tile.style.height = originalStyles.height;
+  tile.style.opacity = originalStyles.opacity;
+  tile.style.pointerEvents = originalStyles.pointerEvents;
+  tile.style.zIndex = originalStyles.zIndex;
+  tile.style.display = originalStyles.display;
+}
+
+/**
+ * Applies invisible overlay styling to tile for click handling
+ */
+function applyInvisibleOverlay(tile: HTMLElement): void {
+  tile.style.position = 'absolute';
+  tile.style.top = '0';
+  tile.style.left = '0';
+  tile.style.width = '100%';
+  tile.style.height = '100%';
+  tile.style.opacity = '0';
+  tile.style.pointerEvents = 'auto';
+  tile.style.zIndex = '5';
+  tile.style.display = '';
+}
 
 /**
  * Creates a table row from offer data
@@ -89,7 +167,6 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
   row.style.transition = 'background-color 0.2s';
   row.dataset.tileIndex = String(index);
   row.dataset.merchantTld = offer.merchantTLD;
-
   row.style.position = 'relative';
   row.style.cursor = 'pointer';
 
@@ -101,43 +178,9 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
     row.style.backgroundColor = '';
   });
 
-  // Store the tile's original DOM index if not already set
-  // This happens ONCE on first table view, preserving original order
-  if (!offer.tile.hasAttribute('data-original-position')) {
-    const parent = offer.tile.parentElement;
-    if (parent) {
-      const siblings = Array.from(parent.children);
-      const position = siblings.indexOf(offer.tile);
-      offer.tile.setAttribute('data-original-position', String(position));
-    }
-  }
-
-  // Store original inline styles before modifying (only if not already stored)
-  if (!offer.tile.hasAttribute('data-original-inline-styles')) {
-    const originalInlineStyles = {
-      position: offer.tile.style.position,
-      top: offer.tile.style.top,
-      left: offer.tile.style.left,
-      width: offer.tile.style.width,
-      height: offer.tile.style.height,
-      opacity: offer.tile.style.opacity,
-      pointerEvents: offer.tile.style.pointerEvents,
-      zIndex: offer.tile.style.zIndex,
-      display: offer.tile.style.display,
-    };
-    offer.tile.setAttribute('data-original-inline-styles', JSON.stringify(originalInlineStyles));
-  }
-
-  // Move the actual tile as an invisible overlay (needed for trusted clicks)
-  offer.tile.style.position = 'absolute';
-  offer.tile.style.top = '0';
-  offer.tile.style.left = '0';
-  offer.tile.style.width = '100%';
-  offer.tile.style.height = '100%';
-  offer.tile.style.opacity = '0';
-  offer.tile.style.pointerEvents = 'auto';
-  offer.tile.style.zIndex = '5';
-  offer.tile.style.display = ''; // Ensure tile is visible (not 'none')
+  // Save tile state and apply invisible overlay
+  saveTileState(offer.tile);
+  applyInvisibleOverlay(offer.tile);
 
   // Merchant Name
   const merchantCell = document.createElement('td');
@@ -168,7 +211,7 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
   mileageCell.style.whiteSpace = 'nowrap';
   row.appendChild(mileageCell);
 
-  // View Offer button (entire row is clickable via clone overlay)
+  // View Offer button (entire row is clickable via tile overlay)
   const actionCell = document.createElement('td');
   actionCell.style.padding = '12px';
   actionCell.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
@@ -200,7 +243,7 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
     starCell.style.textAlign = 'center';
     starCell.style.width = '50px';
     starCell.style.position = 'relative';
-    starCell.style.zIndex = '20'; // Higher than clone overlay so star is clickable
+    starCell.style.zIndex = '20'; // Higher than tile overlay so star is clickable
     starCell.style.pointerEvents = 'auto';
 
     // Check if the original tile has a star button
@@ -274,7 +317,6 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
           "title",
           nowFavorited ? "Remove from favorites" : "Add to favorites"
         );
-        // Update the color for filled (yellow) vs outline (transparent)
         starClone.style.color = nowFavorited ? '#FFD700' : 'transparent';
 
         // Update the original star as well
@@ -291,7 +333,6 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
       };
 
       starClone.addEventListener('click', handleStarClick);
-
       starCell.appendChild(starClone);
     }
 
@@ -305,7 +346,7 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
 }
 
 /**
- * Creates the table structure
+ * Creates the table structure with batched DOM operations
  */
 function createTable(offers: OfferData[], showFavorites: boolean): HTMLTableElement {
   const table = document.createElement('table');
@@ -347,12 +388,16 @@ function createTable(offers: OfferData[], showFavorites: boolean): HTMLTableElem
   thead.appendChild(headerRow);
   table.appendChild(thead);
 
-  // Create body
+  // PERFORMANCE: Use DocumentFragment for batched DOM operations
   const tbody = document.createElement('tbody');
+  const fragment = document.createDocumentFragment();
+
   offers.forEach((offer, index) => {
     const row = createTableRow(offer, index, showFavorites);
-    tbody.appendChild(row);
+    fragment.appendChild(row);
   });
+
+  tbody.appendChild(fragment);
   table.appendChild(tbody);
 
   return table;
@@ -438,7 +483,6 @@ function createPaginationControls(): HTMLDivElement {
       } else {
         pageInput.value = String(currentPage);
       }
-      // Remove focus from input so first click on offers works immediately
       pageInput.blur();
     }
   });
@@ -537,6 +581,9 @@ function updatePaginationButtons(): void {
   }
 }
 
+/**
+ * Renders current page, keeping non-visible tiles in main container (hidden)
+ */
 async function renderCurrentPage(): Promise<void> {
   const tableContainer = document.getElementById(TABLE_CONTAINER_ID);
   if (!tableContainer) return;
@@ -553,34 +600,15 @@ async function renderCurrentPage(): Promise<void> {
   // Update table container width based on whether favorites are shown
   tableContainer.style.maxWidth = showFavorites ? '1500px' : '1400px';
 
-  // Before removing existing table, move tiles back to main container
+  // Before removing existing table, move tiles back to main container (hidden)
   const existingTable = document.getElementById(TABLE_ID);
   if (existingTable) {
     const tilesInOldTable = Array.from(existingTable.querySelectorAll('[data-testid^="feed-tile-"]')) as HTMLElement[];
-
-    // Reset each tile and move to main container
     tilesInOldTable.forEach(tile => {
-      // Restore original inline styles
-      const originalStylesStr = tile.getAttribute('data-original-inline-styles');
-      if (originalStylesStr) {
-        try {
-          const originalStyles = JSON.parse(originalStylesStr);
-          tile.style.position = originalStyles.position;
-          tile.style.top = originalStyles.top;
-          tile.style.left = originalStyles.left;
-          tile.style.width = originalStyles.width;
-          tile.style.height = originalStyles.height;
-          tile.style.opacity = originalStyles.opacity;
-          tile.style.pointerEvents = originalStyles.pointerEvents;
-          tile.style.zIndex = originalStyles.zIndex;
-          tile.style.display = 'none'; // Hide it in the main container during pagination
-        } catch (e) {
-          console.warn('[Table View] Failed to restore styles during pagination:', e);
-        }
-      }
+      // Keep tiles hidden in main container when not in current page
+      tile.style.display = 'none';
       mainContainer.appendChild(tile);
     });
-
     existingTable.remove();
   }
 
@@ -605,8 +633,6 @@ export async function refreshTableView(): Promise<void> {
     return;
   }
 
-  console.log('[Table View] Refreshing table to reflect changes');
-
   const tableContainer = document.getElementById(TABLE_CONTAINER_ID);
   if (!tableContainer) return;
 
@@ -615,29 +641,13 @@ export async function refreshTableView(): Promise<void> {
   // Update table container width based on whether favorites are shown
   tableContainer.style.maxWidth = showFavorites ? '1500px' : '1400px';
 
-  // If favorites are being enabled, make sure ALL tiles in allOffers have stars
-  if (showFavorites && allOffers.length > 0) {
-    // Check if any tiles are missing stars
-    const tilesNeedingStars = allOffers.filter(offer => !offer.tile.querySelector('[data-c1-favorite-star]'));
-    console.log('[Table View] Tiles needing stars:', tilesNeedingStars.length, 'out of', allOffers.length);
-
-    if (tilesNeedingStars.length > 0) {
-      // Stars haven't been injected yet - wait a bit longer
-      console.log('[Table View] Waiting for star injection to complete...');
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Check again after waiting
-      const stillNeedingStars = allOffers.filter(offer => !offer.tile.querySelector('[data-c1-favorite-star]'));
-      console.log('[Table View] After waiting, tiles still needing stars:', stillNeedingStars.length);
-    }
+  // If favorites are being enabled, wait for star injection to complete
+  if (showFavorites) {
+    await new Promise(resolve => setTimeout(resolve, 200));
   }
 
   // Re-extract offer data to pick up any changes from filtering or sorting
-  // This ensures we only show visible tiles (respecting favorites filter)
-  // and respect the current sort order (CSS order property)
-  const previousLength = allOffers.length;
   allOffers = extractOfferData();
-  console.log('[Table View] Re-extracted offers:', allOffers.length, '(was:', previousLength + ')');
 
   // Recalculate pagination based on new offer count
   totalPages = Math.ceil(allOffers.length / ITEMS_PER_PAGE);
@@ -672,14 +682,7 @@ export async function applyTableView(): Promise<{ success: boolean; offersShown:
       };
     }
 
-    // Ensure main container is visible before extracting tiles
-    // (in case it was hidden from a previous table view)
-    mainContainer.style.display = '';
-    mainContainer.removeAttribute('data-original-display');
-
-    // Clean up any leftover table artifacts from previous toggles
-    // The main container still has the original tiles (it was just hidden)
-    // But we may have orphaned tiles in a leftover table container
+    // Clean up any leftover table artifacts
     const existingTableContainer = document.getElementById(TABLE_CONTAINER_ID);
     if (existingTableContainer) {
       existingTableContainer.remove();
@@ -687,7 +690,7 @@ export async function applyTableView(): Promise<{ success: boolean; offersShown:
 
     // Extract offer data
     allOffers = extractOfferData();
-    console.log('[Table View] Extracted offers:', allOffers.length, 'First 3:', allOffers.slice(0, 3).map(o => o.merchantName));
+
     if (allOffers.length === 0) {
       return {
         success: false,
@@ -703,10 +706,7 @@ export async function applyTableView(): Promise<{ success: boolean; offersShown:
     // Check if favorites are enabled
     const showFavorites = await areFavoritesEnabled();
 
-    // Hide the entire main container to preserve all tiles in their original positions
-    // Store the original display value so we can restore it
-    const originalMainContainerDisplay = mainContainer.style.display;
-    mainContainer.setAttribute('data-original-display', originalMainContainerDisplay);
+    // Hide the main container to show only table view
     mainContainer.style.display = 'none';
 
     // Create fresh table container
@@ -747,7 +747,7 @@ export async function applyTableView(): Promise<{ success: boolean; offersShown:
 
 /**
  * Removes table view and restores grid
- * Optimized for performance with batched DOM operations
+ * OPTIMIZED: Uses WeakMap for state instead of DOM attributes
  */
 export async function removeTableView(): Promise<{ success: boolean; error?: string }> {
   try {
@@ -759,61 +759,30 @@ export async function removeTableView(): Promise<{ success: boolean; error?: str
       };
     }
 
-    // Collect ALL tiles from both table container and main container
+    // Collect ALL tiles from both table and main container
     const tableContainer = document.getElementById(TABLE_CONTAINER_ID);
     const allTiles: HTMLElement[] = [];
 
-    // Get tiles from table container
+    // Get tiles from table (currently visible page)
     if (tableContainer) {
       const tilesInTable = Array.from(tableContainer.querySelectorAll('[data-testid^="feed-tile-"]')) as HTMLElement[];
       allTiles.push(...tilesInTable);
     }
 
-    // Get tiles from main container (that were moved back during pagination)
+    // Get tiles from main container (hidden tiles from other pages)
     const tilesInMain = Array.from(mainContainer.querySelectorAll('[data-testid^="feed-tile-"]')) as HTMLElement[];
     allTiles.push(...tilesInMain);
 
-    console.log('[Table View] Restoring', allTiles.length, 'tiles');
-
-    // Sort ALL tiles by their original position
-    const tilesWithPosition = allTiles.map(tile => {
-      const posStr = tile.getAttribute('data-original-position');
-      const position = posStr ? parseInt(posStr, 10) : 999999;
-      return { tile, position };
-    });
-    tilesWithPosition.sort((a, b) => a.position - b.position);
-
-    // PERFORMANCE OPTIMIZATION: Use DocumentFragment for batched DOM operations
-    // This prevents multiple reflows/repaints
+    // PERFORMANCE: Use DocumentFragment for batched DOM operations
     const fragment = document.createDocumentFragment();
 
     // Restore all tiles' styles and add to fragment
-    tilesWithPosition.forEach(({ tile }) => {
-      // Restore original inline styles
-      const originalStylesStr = tile.getAttribute('data-original-inline-styles');
-      if (originalStylesStr) {
-        try {
-          const originalStyles = JSON.parse(originalStylesStr);
-          tile.style.position = originalStyles.position;
-          tile.style.top = originalStyles.top;
-          tile.style.left = originalStyles.left;
-          tile.style.width = originalStyles.width;
-          tile.style.height = originalStyles.height;
-          tile.style.opacity = originalStyles.opacity;
-          tile.style.pointerEvents = originalStyles.pointerEvents;
-          tile.style.zIndex = originalStyles.zIndex;
-          tile.style.display = originalStyles.display;
-        } catch (e) {
-          console.warn('[Table View] Failed to restore styles:', e);
-        }
-      }
-
-      // Add tile to fragment (detaches it from current parent)
+    allTiles.forEach(tile => {
+      restoreTileState(tile);
       fragment.appendChild(tile);
     });
 
     // Single DOM operation: append all tiles at once
-    // This triggers only ONE reflow instead of hundreds
     mainContainer.appendChild(fragment);
 
     // Remove table container
@@ -821,10 +790,8 @@ export async function removeTableView(): Promise<{ success: boolean; error?: str
       tableContainer.remove();
     }
 
-    // Restore the main container's display property to show the grid
-    const originalDisplay = mainContainer.getAttribute('data-original-display');
-    mainContainer.style.display = originalDisplay || '';
-    mainContainer.removeAttribute('data-original-display');
+    // Restore the main container display
+    mainContainer.style.display = '';
 
     return {
       success: true,
