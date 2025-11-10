@@ -80,6 +80,10 @@ export function setupTilesWatcher(
                 excludedCount++;
                 console.log(`[Favorites Watcher] Excluding tile - testid: ${testId.substring(0, 50)}`);
               } else {
+                // Apply content-visibility optimization early
+                tile.style.contentVisibility = 'auto';
+                tile.style.containIntrinsicSize = 'auto 200px';
+
                 tilesToProcess.push(tile);
                 processedTiles.set(tile, true); // WeakMap auto-GC
               }

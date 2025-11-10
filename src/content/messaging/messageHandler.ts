@@ -2,7 +2,28 @@ import { executeSorting } from '../modules/sorting/executeSorting';
 import { applyFavoritesFilter, loadAllOffers } from '../modules/favorites/filter';
 import { injectFavorites, removeFavoritesStars } from '../modules/favorites/inject';
 import { updateStarState } from '../modules/favorites/updateStarState';
+import { applyTableView, removeTableView, refreshTableView } from '../modules/tableView';
 import { getWatcherCleanup } from '../index';
+
+// Track current view mode
+let currentViewMode: 'grid' | 'table' = 'grid';
+
+/**
+ * Gets the current view mode state
+ * Used by internal modules to check the current view mode
+ */
+export function getViewMode(): 'grid' | 'table' {
+  return currentViewMode;
+}
+
+/**
+ * Updates the current view mode state
+ * Used by internal modules (like sorting) to keep state in sync
+ */
+export function updateViewMode(mode: 'grid' | 'table'): void {
+  console.log('[MessageHandler] Updating view mode to:', mode);
+  currentViewMode = mode;
+}
 
 /**
  * Sets up the Chrome message listener for handling requests from the popup.
@@ -82,17 +103,66 @@ export function setupMessageHandler(
           const filterResult = await applyFavoritesFilter(message.showFavoritesOnly, fullyPaginated);
           progressState.filter.isActive = false;
           progressState.filter.progress = null;
+
+          // If in table view, refresh to reflect the filter changes
+          await refreshTableView();
+
           return filterResult;
         case 'LOAD_ALL_REQUEST':
           return await loadAllOffers(fullyPaginated);
         case 'INJECT_FAVORITES_REQUEST':
-          return await injectFavorites(favoritesObserver);
+          // Ensure storage is updated first
+          await chrome.storage.local.set({ 'c1-favorites-enabled': true });
+
+          // Inject stars into tiles
+          const injectResult = await injectFavorites(favoritesObserver);
+
+          // If in table view, also inject into table's tiles specifically
+          const tableContainer = document.getElementById('c1-offers-table-container');
+          if (tableContainer) {
+            console.log('[MessageHandler] Table view active - injecting stars into table tiles');
+            const tableTiles = Array.from(document.querySelectorAll('#c1-offers-table [data-testid^="feed-tile-"]')) as HTMLElement[];
+            console.log('[MessageHandler] Found', tableTiles.length, 'tiles in table');
+
+            if (tableTiles.length > 0) {
+              // Manually inject stars into table tiles since they might not be found by findAllTiles
+              const { injectStarsIntoTiles } = await import('../modules/favorites/inject');
+              await injectStarsIntoTiles(tableTiles, false);
+            }
+          }
+
+          // Wait for injection to complete
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // If in table view, refresh to show star column
+          await refreshTableView();
+
+          return injectResult;
         case 'REMOVE_FAVORITES_REQUEST':
           const watcherCleanup = getWatcherCleanup();
           if (watcherCleanup) {
             watcherCleanup.cleanupAll();
           }
-          return await removeFavoritesStars(favoritesObserver);
+
+          // Ensure storage is updated first
+          await chrome.storage.local.set({ 'c1-favorites-enabled': false });
+
+          // Clear any active favorites filter BEFORE removing stars
+          // This ensures all tiles are visible when refreshTableView() re-extracts data
+          console.log('[MessageHandler] Clearing any active favorites filter before removing stars');
+          await applyFavoritesFilter(false, fullyPaginated, true);
+
+          // Remove stars from tiles
+          const removeResult = await removeFavoritesStars(favoritesObserver);
+
+          // Wait for removal to fully complete
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // If in table view, refresh to hide star column
+          // At this point all tiles should be visible (filter cleared above)
+          await refreshTableView();
+
+          return removeResult;
         case 'UPDATE_STAR_STATE':
           updateStarState(message.merchantTLD, message.isFavorited);
           return { success: true };
@@ -108,6 +178,34 @@ export function setupMessageHandler(
             isActive: progressState.filter.isActive,
             progress: progressState.filter.progress,
           };
+        case 'VIEW_MODE_REQUEST':
+          console.log('[MessageHandler] Processing VIEW_MODE_REQUEST:', message.viewMode);
+          if (message.viewMode === 'table') {
+            const result = await applyTableView();
+            if (result.success) {
+              currentViewMode = 'table';
+            }
+            return result;
+          } else {
+            const result = await removeTableView();
+            if (result.success) {
+              currentViewMode = 'grid';
+
+              // Check if favorites filter was active and re-apply it
+              // (removeTableView restores original display styles, clearing filter)
+              const filterState = await chrome.storage.local.get('c1-favorites-filter-active');
+              const isFilterActive = filterState['c1-favorites-filter-active'] === true;
+
+              if (isFilterActive) {
+                console.log('[MessageHandler] Re-applying favorites filter after switching to grid view');
+                await applyFavoritesFilter(true, fullyPaginated, true);
+              }
+            }
+            return result;
+          }
+        case 'GET_VIEW_MODE':
+          console.log('[MessageHandler] Processing GET_VIEW_MODE, current mode:', currentViewMode);
+          return { viewMode: currentViewMode };
         default:
           console.log('[MessageHandler] Unknown message type:', message.type);
           return { success: false, error: 'Unknown message type' };

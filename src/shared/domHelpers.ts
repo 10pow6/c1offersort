@@ -86,6 +86,43 @@ export function isValidMerchantTLD(tld: unknown): tld is string {
   return VALID_TLD_PATTERN.test(tld);
 }
 
+interface TileDataSchema {
+  inventory?: {
+    merchantTLD?: unknown;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * Validates the structure of tile data before accessing properties
+ * @param data - Unknown data to validate
+ * @returns true if data matches expected schema
+ */
+function validateTileData(data: unknown): data is TileDataSchema {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  // Validate inventory exists and is an object
+  if (!obj.inventory || typeof obj.inventory !== 'object') {
+    return false;
+  }
+
+  const inventory = obj.inventory as Record<string, unknown>;
+
+  // Validate merchantTLD if present
+  if ('merchantTLD' in inventory) {
+    if (typeof inventory.merchantTLD !== 'string') {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function extractMerchantTLDFromDataTestId(tile: HTMLElement): string {
   const dataTestId = tile.getAttribute("data-testid");
   if (!dataTestId || !dataTestId.startsWith("feed-tile-")) {
@@ -100,27 +137,43 @@ export function extractMerchantTLDFromDataTestId(tile: HTMLElement): string {
       return "";
     }
 
+    // Validate Base64 format before attempting decode
+    // Valid Base64: A-Z, a-z, 0-9, +, /, and = for padding
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64Part)) {
+      // Silently skip invalid Base64 - this is expected for some tiles
+      return "";
+    }
+
     const jsonString = atob(base64Part);
-    const data = JSON.parse(jsonString);
 
-    if (!data || typeof data !== 'object') {
-      console.warn("[Security] Invalid data structure");
+    // Parse with error handling
+    let data: unknown;
+    try {
+      data = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.warn("[Security] JSON parse failed:", parseError);
       return "";
     }
 
-    if (!data.inventory || typeof data.inventory !== 'object') {
+    // Validate schema BEFORE accessing properties
+    if (!validateTileData(data)) {
+      console.warn("[Security] Invalid data structure - schema validation failed");
       return "";
     }
 
-    const merchantTLD = data.inventory.merchantTLD;
+    // Safe to access now - TypeScript knows the structure
+    const merchantTLD = data.inventory!.merchantTLD;
 
     if (isValidMerchantTLD(merchantTLD)) {
-      return merchantTLD;
+      return merchantTLD as string;
     }
 
     console.warn("[Security] Invalid merchantTLD format:", merchantTLD);
     return "";
   } catch (error) {
+    // Better error formatting - DOMException doesn't serialize well
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.warn("[Security] Failed to extract merchantTLD:", errorMsg);
     return "";
   }
 }
