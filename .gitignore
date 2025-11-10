@@ -46,6 +46,8 @@ releases/
 # Misc
 Thumbs.db
 
+# Sample source files
+sample_source/
 
 # Internal documentation
 .claude/CLAUDE.md

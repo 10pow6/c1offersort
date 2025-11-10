@@ -1,10 +1,11 @@
 import React, { useCallback } from 'react';
-import type { FavoritedOffer } from "@/types";
-import { removeFavorite } from "@/utils/favoritesManager";
+import type { Favorite } from "@/features/favorites/favorites.types";
+import { removeFavorite } from "@/features/favorites/FavoritesStore";
+import { updateStarButton } from "@/features/favorites/StarButton";
 import "./FavoritesList.css";
 
 interface FavoritesListProps {
-  favorites: FavoritedOffer[];
+  favorites: Favorite[];
   missingFavorites: string[];
   onRemove: () => void;
   currentUrl: string | null;
@@ -20,23 +21,28 @@ export const FavoritesList = React.memo(({
 }: FavoritesListProps) => {
   const handleRemove = useCallback(async (merchantTLD: string) => {
     try {
-      await removeFavorite(merchantTLD, currentUrl || undefined);
+      await removeFavorite(merchantTLD);
 
-      // Send message to content script to update the star button on the page
+      // Update all star buttons on the page for this merchant
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          type: "UPDATE_STAR_STATE",
-          merchantTLD,
-          isFavorited: false,
-        });
+        try {
+          await chrome.tabs.sendMessage(tabs[0].id, {
+            type: "UPDATE_STAR_STATE",
+            merchantTLD,
+            isFavorited: false,
+          });
+        } catch (error) {
+          // Tab might not have content script loaded, ignore
+          console.debug("[Favorites] Could not update star on page:", error);
+        }
       }
 
       onRemove();
     } catch (error) {
       console.error("[Favorites] Failed to remove:", error);
     }
-  }, [currentUrl, onRemove]);
+  }, [onRemove]);
 
   if (favorites.length === 0) {
     return null;
