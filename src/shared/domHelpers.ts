@@ -54,25 +54,12 @@ export function getTileId(tile: HTMLElement): string {
 export function countRealTiles(): number {
   const allTiles = document.querySelectorAll('[data-testid^="feed-tile-"]');
   let count = 0;
-  let skeletonCount = 0;
-  let carouselCount = 0;
 
   for (const tile of allTiles) {
-    if (isSkeletonTile(tile)) {
-      skeletonCount++;
-    } else if (isCarouselTile(tile)) {
-      carouselCount++;
-    } else {
+    if (!isSkeletonTile(tile) && !isCarouselTile(tile)) {
       count++;
     }
   }
-
-  console.log('[DOMHelpers] countRealTiles:', {
-    totalTiles: allTiles.length,
-    realTiles: count,
-    skeletonTiles: skeletonCount,
-    carouselTiles: carouselCount
-  });
 
   return count;
 }
@@ -294,10 +281,6 @@ export function findMainContainer(): HTMLElement | null {
   const container = document.querySelector(SELECTORS.container) as HTMLElement;
 
   if (container) {
-    // Only log on first find or after cache expires
-    if (!cachedContainer) {
-      console.log('[DOMHelpers] Found offers container');
-    }
     cachedContainer = container;
     lastContainerCheck = now;
     return container;
@@ -329,17 +312,5 @@ export function findAllTiles(suppressWarning = false): HTMLElement[] {
 }
 
 export function findViewMoreButton(): HTMLButtonElement | null {
-  const button = document.querySelector(SELECTORS.viewMoreButton) as HTMLButtonElement;
-
-  if (button) {
-    console.log('[DOMHelpers] Found "View More Offers" button:', {
-      text: button.textContent?.trim(),
-      visible: button.offsetParent !== null,
-      disabled: button.hasAttribute('disabled')
-    });
-    return button;
-  }
-
-  console.log('[DOMHelpers] No "View More" button found');
-  return null;
+  return document.querySelector(SELECTORS.viewMoreButton) as HTMLButtonElement;
 }

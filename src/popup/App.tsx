@@ -36,7 +36,6 @@ import "./components/FeaturesSection/FeaturesSection.css";
  * - Real-time progress updates during sorting and pagination
  */
 const App: React.FC = () => {
-  console.log('[App] Component mounted');
 
   const currentUrl = useCurrentTab();
   const {
@@ -48,7 +47,6 @@ const App: React.FC = () => {
     progressUpdate,
   } = useSortOffers();
 
-  console.log('[App] Render - isLoading:', isLoading, 'progressUpdate:', progressUpdate);
   const { favorites, favoritesCount, refreshFavorites } = useFavorites(currentUrl);
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(false);
   const [favoritesEnabled, setFavoritesEnabled] = useState(false);
@@ -69,7 +67,6 @@ const App: React.FC = () => {
       } catch (error) {
         // Silently fail - we already default to grid mode
         // This prevents blocking if content script isn't ready yet
-        console.log("[App] Content script not ready, using default grid mode");
       }
     }
     loadViewMode();
@@ -121,7 +118,6 @@ const App: React.FC = () => {
           }));
         }
       } catch (error) {
-        console.log('[App] No active filter operation or failed to query:', error);
       }
     }
     loadFilterState();
@@ -174,7 +170,6 @@ const App: React.FC = () => {
       try {
         chrome.runtime.onMessage.removeListener(messageListener);
       } catch (error) {
-        console.log('[App] Failed to remove message listener (extension context may be invalidated):', error);
       }
     };
   }, []);
@@ -208,7 +203,6 @@ const App: React.FC = () => {
       if (favoritesEnabledRef.current) {
         // If currently in table view, switch to grid view first (like filter toggle does)
         if (wasInTableView) {
-          console.log('[App] Currently in table view, switching to grid before removing favorites');
           setIsViewModeLoading(true);
           try {
             const result = await switchViewMode("grid");
@@ -245,7 +239,6 @@ const App: React.FC = () => {
 
           // If we were in table view, switch back to table view after removing favorites
           if (wasInTableView) {
-            console.log('[App] Switching back to table view after removing favorites');
             setIsViewModeLoading(true);
             try {
               const tableResult = await switchViewMode("table");
@@ -270,7 +263,6 @@ const App: React.FC = () => {
       } else {
         // Enabling favorites - follow same pattern if in table view
         if (wasInTableView) {
-          console.log('[App] Currently in table view, switching to grid before enabling favorites');
           setIsViewModeLoading(true);
           try {
             const result = await switchViewMode("grid");
@@ -302,7 +294,6 @@ const App: React.FC = () => {
 
           // If we were in table view, switch back to table view after injecting favorites
           if (wasInTableView) {
-            console.log('[App] Switching back to table view after enabling favorites');
             setIsViewModeLoading(true);
             try {
               const tableResult = await switchViewMode("table");
@@ -342,11 +333,8 @@ const App: React.FC = () => {
     const newShowFavoritesOnly = !showFavoritesOnlyRef.current;
     const wasInTableView = viewMode === "table";
 
-    console.log('[App] Toggling favorites filter:', { newShowFavoritesOnly, currentViewMode: viewMode, wasInTableView });
-
     // If currently in table view, switch to grid view first
     if (wasInTableView) {
-      console.log('[App] Currently in table view, switching to grid before applying filter');
       setIsViewModeLoading(true);
       setErrorMessage(null);
 
@@ -358,13 +346,12 @@ const App: React.FC = () => {
         } else {
           setErrorMessage(`Failed to switch to grid view: ${result.error || "Unknown error"}`);
           setIsViewModeLoading(false);
-          return; // Don't proceed with filter if view switch failed
+          return;
         }
       } catch (error) {
-        console.error("View mode switch error before filter:", error);
         setErrorMessage("Failed to switch to grid view before filtering");
         setIsViewModeLoading(false);
-        return; // Don't proceed with filter if view switch failed
+        return;
       } finally {
         setIsViewModeLoading(false);
       }
@@ -382,8 +369,6 @@ const App: React.FC = () => {
       const result = await applyFavoritesFilterInActiveTab(
         newShowFavoritesOnly
       );
-
-      console.log('[App] Filter result:', result);
 
       if (!result.success) {
         setErrorMessage(
@@ -406,7 +391,6 @@ const App: React.FC = () => {
 
       // If we were in table view, switch back to table view after filtering
       if (wasInTableView) {
-        console.log('[App] Switching back to table view after filtering');
         setIsViewModeLoading(true);
         try {
           const tableResult = await switchViewMode("table");
@@ -417,14 +401,12 @@ const App: React.FC = () => {
             setErrorMessage(`Filter applied but failed to return to table view: ${tableResult.error || "Unknown error"}`);
           }
         } catch (error) {
-          console.error("View mode switch error after filter:", error);
           setErrorMessage("Filter applied but failed to return to table view");
         } finally {
           setIsViewModeLoading(false);
         }
       }
     } catch (error) {
-      console.error("Favorites filter error:", error);
       setErrorMessage("Failed to apply favorites filter");
       setFilterState(prev => ({
         ...prev,
@@ -433,7 +415,6 @@ const App: React.FC = () => {
       }));
       setMissingFavorites([]);
     } finally {
-      console.log('[App] Filter complete, clearing loading state');
       setFilterState(prev => ({
         ...prev,
         isLoading: false,
@@ -469,7 +450,6 @@ const App: React.FC = () => {
   // - If in table view, it removes it, sorts in grid, then rebuilds table view
   // - This ensures proper tile access and maintains view mode state
   const handleSort = useCallback(async () => {
-    console.log('[App] handleSort called, viewMode:', viewMode);
     await originalHandleSort();
   }, [viewMode, originalHandleSort]);
 

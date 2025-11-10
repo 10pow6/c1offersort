@@ -31,7 +31,7 @@ chrome.storage.local.remove('c1-favorites-filter-active').catch(() => {
     // Wait a bit for DOM to be ready
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const tiles = findAllTiles();
+    const tiles = findAllTiles(true); // Suppress warning during initialization
     const mainContainer = findMainContainer();
 
     // Remove any filter-applied styles from tiles
@@ -115,30 +115,5 @@ window.addEventListener('beforeunload', async () => {
     console.error('[Content] Failed to flush favorites on unload:', err);
   });
 });
-
-// DEBUG: Add click logging to understand Capital One's event handling
-function setupClickLogging() {
-  console.log('[DEBUG] Setting up click event logging...');
-
-  // Capture clicks at document level
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-
-    // Check if this is a tile click
-    const tile = target.closest('[data-testid^="feed-tile"]');
-    if (tile) {
-      console.log('[DEBUG] Tile clicked!');
-      console.log('[DEBUG] Target element:', target.tagName, target.className);
-      console.log('[DEBUG] Tile element:', tile.tagName, tile.getAttribute('data-testid'));
-      console.log('[DEBUG] Event phase:', e.eventPhase);
-      console.log('[DEBUG] Event bubbles:', e.bubbles);
-      console.log('[DEBUG] Event composed:', e.composed);
-      console.log('[DEBUG] Is trusted event:', e.isTrusted);
-    }
-  }, true); // Use capture phase
-}
-
-// Set up click logging after a short delay to ensure page is loaded
-setTimeout(setupClickLogging, 1000);
 
 console.log(`${config.logging.contexts.content} Initialization complete`);
