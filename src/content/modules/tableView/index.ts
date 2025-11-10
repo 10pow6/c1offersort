@@ -57,14 +57,47 @@ async function areFavoritesEnabled(): Promise<boolean> {
 /**
  * Extracts all relevant data from offer tiles
  * Respects the current sort order by reading the CSS 'order' property
+ * In table view, also collects tiles from the table container
  */
 function extractOfferData(): OfferData[] {
-  const tiles = findAllTiles();
+  // In table view, collect tiles from both main container and table container
+  const mainTiles = findAllTiles();
+  const tableTiles = Array.from(document.querySelectorAll('#c1-offers-table [data-testid^="feed-tile-"]')) as HTMLElement[];
+
+  // Combine and deduplicate tiles (use Set with tile IDs to avoid duplicates)
+  const tileMap = new Map<HTMLElement, boolean>();
+  const allTiles = [...mainTiles, ...tableTiles];
+  allTiles.forEach(tile => tileMap.set(tile, true));
+  const uniqueTiles = Array.from(tileMap.keys());
+
+  // Temporarily clear inline display:none from pagination hiding so we can properly extract all tiles
+  // But DON'T clear display:none from favorites filter (which uses !important)
+  // Store which tiles had display:none from pagination so we can restore it after
+  const tilesWithDisplayNone: HTMLElement[] = [];
+  uniqueTiles.forEach(tile => {
+    if (tile.style.display === 'none') {
+      // Check if this is from favorites filter (!important) or just pagination
+      // Get the priority of the display property
+      const priority = tile.style.getPropertyPriority('display');
+
+      // Only remove if it's NOT !important (i.e., it's from pagination, not favorites filter)
+      if (priority !== 'important') {
+        tilesWithDisplayNone.push(tile);
+        tile.style.removeProperty('display');
+      }
+    }
+  });
+
   const offerData: OfferData[] = [];
 
-  for (const tile of tiles) {
-    // Skip hidden tiles (filtered out)
-    if ((tile as HTMLElement).style.display === 'none') {
+  for (const tile of uniqueTiles) {
+    // Check if tile is filtered by favorites filter
+    // The favorites filter sets 'display: none !important'
+    const computedDisplay = window.getComputedStyle(tile).display;
+
+    // Skip filtered tiles (e.g., non-favorited when "show favorites only" is active)
+    // Now this only catches tiles with !important (favorites filter), not pagination hiding
+    if (computedDisplay === 'none') {
       continue;
     }
 
@@ -94,16 +127,22 @@ function extractOfferData(): OfferData[] {
     });
   }
 
+  // Restore display:none to tiles that had it (pagination hiding)
+  tilesWithDisplayNone.forEach(tile => {
+    tile.style.display = 'none';
+  });
+
   // Sort by the CSS order property to respect the current sort order
   return offerData.sort((a, b) => (a.order || 0) - (b.order || 0));
 }
 
 /**
  * Saves tile's current inline styles to memory (not DOM)
+ * Only saves the ORIGINAL state before first table view application
  */
 function saveTileState(tile: HTMLElement): void {
   if (tileStateMap.has(tile)) {
-    return; // Already saved
+    return; // Already saved - don't overwrite original state
   }
 
   const state: TileState = {
@@ -156,19 +195,24 @@ function applyInvisibleOverlay(tile: HTMLElement): void {
   tile.style.opacity = '0';
   tile.style.pointerEvents = 'auto';
   tile.style.zIndex = '5';
-  tile.style.display = '';
+  // Don't set display - preserve any filtering that may have been applied
+  // tile.style.display = '';
+  tile.style.overflow = 'hidden'; // Prevent tile content from expanding row
+  tile.style.maxHeight = '100%'; // Constrain tile height
 }
 
 /**
  * Creates a table row from offer data
  */
-function createTableRow(offer: OfferData, index: number, showFavorites: boolean): HTMLTableRowElement {
+async function createTableRow(offer: OfferData, index: number, showFavorites: boolean): Promise<HTMLTableRowElement> {
   const row = document.createElement('tr');
   row.style.transition = 'background-color 0.2s';
   row.dataset.tileIndex = String(index);
   row.dataset.merchantTld = offer.merchantTLD;
   row.style.position = 'relative';
   row.style.cursor = 'pointer';
+  row.style.height = '60px'; // Fixed row height to prevent expansion
+  row.style.maxHeight = '60px'; // Enforce max height
 
   // Add hover effect
   row.addEventListener('mouseenter', () => {
@@ -180,6 +224,10 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
 
   // Save tile state and apply invisible overlay
   saveTileState(offer.tile);
+  // Clear any display:none that was set when moving back to main container
+  if (offer.tile.style.display === 'none') {
+    offer.tile.style.display = '';
+  }
   applyInvisibleOverlay(offer.tile);
 
   // Merchant Name
@@ -194,6 +242,7 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
   merchantCell.style.overflow = 'hidden';
   merchantCell.style.textOverflow = 'ellipsis';
   merchantCell.style.whiteSpace = 'nowrap';
+  merchantCell.style.verticalAlign = 'middle'; // Center content vertically
   row.appendChild(merchantCell);
 
   // Mileage
@@ -204,11 +253,11 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
   mileageCell.style.color = 'rgb(37, 129, 14)';
   mileageCell.style.fontWeight = '600';
   mileageCell.style.textAlign = 'center';
-  mileageCell.style.width = '180px';
   mileageCell.style.position = 'relative';
   mileageCell.style.zIndex = '1';
   mileageCell.style.pointerEvents = 'none';
   mileageCell.style.whiteSpace = 'nowrap';
+  mileageCell.style.verticalAlign = 'middle'; // Center content vertically
   row.appendChild(mileageCell);
 
   // View Offer button (entire row is clickable via tile overlay)
@@ -216,10 +265,10 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
   actionCell.style.padding = '12px';
   actionCell.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
   actionCell.style.textAlign = 'center';
-  actionCell.style.width = '180px';
   actionCell.style.position = 'relative';
   actionCell.style.zIndex = '1';
   actionCell.style.pointerEvents = 'none';
+  actionCell.style.verticalAlign = 'middle'; // Center content vertically
 
   const viewButton = document.createElement('button');
   viewButton.textContent = 'View Offer';
@@ -241,13 +290,38 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
     starCell.style.padding = '12px';
     starCell.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
     starCell.style.textAlign = 'center';
-    starCell.style.width = '50px';
     starCell.style.position = 'relative';
     starCell.style.zIndex = '20'; // Higher than tile overlay so star is clickable
     starCell.style.pointerEvents = 'auto';
+    starCell.style.verticalAlign = 'middle'; // Center content vertically
 
     // Check if the original tile has a star button
-    const starButton = offer.tile.querySelector('[data-c1-favorite-star]') as HTMLElement;
+    let starButton = offer.tile.querySelector('.c1-favorite-star') as HTMLElement;
+
+    // If star doesn't exist on tile, create one dynamically
+    // This can happen if favorites were enabled after table view was created
+    if (!starButton) {
+
+      const { createStarButton, isFavorited } = await import('@/shared/favoritesHelpers');
+      const isInitiallyFavorited = await isFavorited(offer.merchantTLD);
+
+      starButton = createStarButton(
+        offer.tile,
+        offer.merchantTLD,
+        offer.merchantName,
+        isInitiallyFavorited
+      );
+
+      // Inject the star into the tile so it's available for future renders
+      const standardTile = offer.tile.querySelector('.standard-tile') as HTMLElement;
+      if (standardTile) {
+        standardTile.appendChild(starButton);
+      } else {
+        offer.tile.style.position = 'relative';
+        offer.tile.appendChild(starButton);
+      }
+    }
+
     if (starButton) {
       // Clone the star button
       const starClone = starButton.cloneNode(true) as HTMLElement;
@@ -339,8 +413,20 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
     row.appendChild(starCell);
   }
 
-  // Append the invisible tile overlay last (after all cells)
-  row.appendChild(offer.tile);
+  // Wrap the invisible tile overlay in a td that spans all columns
+  // This is required for proper table structure and prevents row height issues
+  const tileCell = document.createElement('td');
+  tileCell.style.position = 'absolute';
+  tileCell.style.top = '0';
+  tileCell.style.left = '0';
+  tileCell.style.width = '100%';
+  tileCell.style.height = '100%';
+  tileCell.style.padding = '0';
+  tileCell.style.border = 'none';
+  tileCell.style.overflow = 'hidden';
+  tileCell.style.pointerEvents = 'none'; // Let clicks pass through to the tile
+  tileCell.appendChild(offer.tile);
+  row.appendChild(tileCell);
 
   return row;
 }
@@ -348,13 +434,15 @@ function createTableRow(offer: OfferData, index: number, showFavorites: boolean)
 /**
  * Creates the table structure with batched DOM operations
  */
-function createTable(offers: OfferData[], showFavorites: boolean): HTMLTableElement {
+async function createTable(offers: OfferData[], showFavorites: boolean): Promise<HTMLTableElement> {
   const table = document.createElement('table');
   table.id = TABLE_ID;
   table.style.width = '100%';
+  table.style.minWidth = '100%'; // Ensure table always spans full width
   table.style.borderCollapse = 'collapse';
   table.style.backgroundColor = '#1a1a1a';
   table.style.color = 'white';
+  table.style.tableLayout = 'fixed'; // Use fixed layout to ensure consistent widths
 
   // Create header
   const thead = document.createElement('thead');
@@ -363,7 +451,16 @@ function createTable(offers: OfferData[], showFavorites: boolean): HTMLTableElem
   headerRow.style.borderBottom = '2px solid rgba(255, 255, 255, 0.2)';
 
   const headers = showFavorites ? ['Merchant', 'Mileage', 'Action', '★'] : ['Merchant', 'Mileage', 'Action'];
-  headers.forEach((headerText) => {
+
+  // Calculate column widths as percentages for table-layout: fixed
+  // Give more room to Mileage and Action columns to prevent wrapping
+  // With favorites (4 cols): Merchant, Mileage, Action, Star
+  // Without favorites (3 cols): Merchant, Mileage, Action
+  const columnWidths = showFavorites
+    ? ['50%', '20%', '25%', '5%']   // With star column - reduced Merchant, increased Mileage/Action
+    : ['50%', '25%', '25%'];         // Without star column - equal space for Mileage/Action
+
+  headers.forEach((headerText, index) => {
     const th = document.createElement('th');
     th.textContent = headerText;
     th.style.padding = '16px 12px';
@@ -373,16 +470,17 @@ function createTable(offers: OfferData[], showFavorites: boolean): HTMLTableElem
     th.style.textTransform = 'uppercase';
     th.style.letterSpacing = '0.5px';
     th.style.color = 'rgba(255, 255, 255, 0.9)';
+
+    // Set width as percentage for fixed table layout
+    th.style.width = columnWidths[index];
+
     if (headerText === '★') {
       th.style.textAlign = 'center';
-      th.style.width = '50px';
     }
-    if (headerText === 'Mileage') {
-      th.style.width = '180px';
+    if (headerText === 'Merchant') {
+      th.style.minWidth = '200px';
     }
-    if (headerText === 'Action') {
-      th.style.width = '180px';
-    }
+
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);
@@ -392,10 +490,11 @@ function createTable(offers: OfferData[], showFavorites: boolean): HTMLTableElem
   const tbody = document.createElement('tbody');
   const fragment = document.createDocumentFragment();
 
-  offers.forEach((offer, index) => {
-    const row = createTableRow(offer, index, showFavorites);
+  // Create all rows asynchronously (to allow star creation if needed)
+  for (let index = 0; index < offers.length; index++) {
+    const row = await createTableRow(offers[index], index, showFavorites);
     fragment.appendChild(row);
-  });
+  }
 
   tbody.appendChild(fragment);
   table.appendChild(tbody);
@@ -585,6 +684,10 @@ function updatePaginationButtons(): void {
  * Renders current page, keeping non-visible tiles in main container (hidden)
  */
 async function renderCurrentPage(): Promise<void> {
+  // Preserve scroll position during page navigation
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
+
   const tableContainer = document.getElementById(TABLE_CONTAINER_ID);
   if (!tableContainer) return;
 
@@ -598,13 +701,19 @@ async function renderCurrentPage(): Promise<void> {
   const showFavorites = await areFavoritesEnabled();
 
   // Update table container width based on whether favorites are shown
-  tableContainer.style.maxWidth = showFavorites ? '1500px' : '1400px';
+  const newWidth = showFavorites ? '1500px' : '1400px';
+  tableContainer.style.maxWidth = newWidth;
+
+  // Force a reflow to ensure width is applied before creating table
+  void tableContainer.offsetHeight;
 
   // Before removing existing table, move tiles back to main container (hidden)
   const existingTable = document.getElementById(TABLE_ID);
   if (existingTable) {
     const tilesInOldTable = Array.from(existingTable.querySelectorAll('[data-testid^="feed-tile-"]')) as HTMLElement[];
     tilesInOldTable.forEach(tile => {
+      // Don't restore state here - tiles will be reused with overlay in next render
+      // State is only restored when completely exiting table view
       // Keep tiles hidden in main container when not in current page
       tile.style.display = 'none';
       mainContainer.appendChild(tile);
@@ -613,7 +722,7 @@ async function renderCurrentPage(): Promise<void> {
   }
 
   // Create and insert new table
-  const table = createTable(pageOffers, showFavorites);
+  const table = await createTable(pageOffers, showFavorites);
   const paginationControls = document.getElementById('c1-table-pagination');
   if (paginationControls) {
     tableContainer.insertBefore(table, paginationControls);
@@ -621,7 +730,30 @@ async function renderCurrentPage(): Promise<void> {
     tableContainer.appendChild(table);
   }
 
+  // Force a reflow to ensure all styles are applied immediately
+  // This prevents the "auto-correction" behavior when navigating pages
+  void table.offsetHeight;
+  void tableContainer.offsetHeight;
+
   updatePaginationButtons();
+
+  // Restore scroll position multiple times to combat any async scroll changes
+  // This handles cases where star creation or other async operations cause unwanted scrolling
+  const restoreScroll = () => window.scrollTo(scrollX, scrollY);
+
+  // Immediate restore
+  restoreScroll();
+
+  // After next paint
+  requestAnimationFrame(() => {
+    restoreScroll();
+    // And again after the following paint
+    requestAnimationFrame(() => {
+      restoreScroll();
+      // Final restore after a small delay to catch any late async operations
+      setTimeout(restoreScroll, 50);
+    });
+  });
 }
 
 /**
@@ -641,12 +773,8 @@ export async function refreshTableView(): Promise<void> {
   // Update table container width based on whether favorites are shown
   tableContainer.style.maxWidth = showFavorites ? '1500px' : '1400px';
 
-  // If favorites are being enabled, wait for star injection to complete
-  if (showFavorites) {
-    await new Promise(resolve => setTimeout(resolve, 200));
-  }
-
   // Re-extract offer data to pick up any changes from filtering or sorting
+  // This now properly collects tiles from both main container and table
   allOffers = extractOfferData();
 
   // Recalculate pagination based on new offer count
@@ -724,12 +852,17 @@ export async function applyTableView(): Promise<{ success: boolean; offersShown:
     const firstPageOffers = allOffers.slice(0, ITEMS_PER_PAGE);
 
     // Create and append table
-    const table = createTable(firstPageOffers, showFavorites);
+    const table = await createTable(firstPageOffers, showFavorites);
     tableContainer.appendChild(table);
 
     // Add pagination controls
     const paginationControls = createPaginationControls();
     tableContainer.appendChild(paginationControls);
+
+    // Force a reflow to ensure all styles are applied immediately
+    // This prevents layout issues on initial table creation
+    void table.offsetHeight;
+    void tableContainer.offsetHeight;
 
     return {
       success: true,

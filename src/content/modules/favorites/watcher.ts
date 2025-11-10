@@ -160,7 +160,11 @@ export function setupTilesWatcher(
 
         if (tilesToProcess.length > 0) {
           console.log(`[Favorites Watcher] Mutation detected - Processing ${tilesToProcess.length} new tiles, Excluded: ${mutationExcludedCount}, AlreadyProcessed: ${mutationProcessedCount}`);
+          // Preserve scroll position during star injection to prevent unwanted scroll-to-top
+          const scrollX = window.scrollX;
+          const scrollY = window.scrollY;
           await injectStarsIntoTiles(tilesToProcess);
+          window.scrollTo(scrollX, scrollY);
         }
 
         debounceTimer = null;

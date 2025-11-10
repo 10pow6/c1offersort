@@ -114,28 +114,55 @@ export function setupMessageHandler(
           // Ensure storage is updated first
           await chrome.storage.local.set({ 'c1-favorites-enabled': true });
 
-          // Inject stars into tiles
+          // Inject stars into tiles (finds tiles in main container)
           const injectResult = await injectFavorites(favoritesObserver);
 
-          // If in table view, also inject into table's tiles specifically
+          // If in table view, we need to ensure stars are injected into ALL tiles
+          // (both those in main container and those in the table)
           const tableContainer = document.getElementById('c1-offers-table-container');
           if (tableContainer) {
-            console.log('[MessageHandler] Table view active - injecting stars into table tiles');
+            // Get all tiles from both locations
+            const { injectStarsIntoTiles } = await import('../modules/favorites/inject');
+            const mainContainerTiles = Array.from(document.querySelectorAll('[data-testid^="feed-tile-"]')) as HTMLElement[];
             const tableTiles = Array.from(document.querySelectorAll('#c1-offers-table [data-testid^="feed-tile-"]')) as HTMLElement[];
-            console.log('[MessageHandler] Found', tableTiles.length, 'tiles in table');
 
-            if (tableTiles.length > 0) {
-              // Manually inject stars into table tiles since they might not be found by findAllTiles
-              const { injectStarsIntoTiles } = await import('../modules/favorites/inject');
-              await injectStarsIntoTiles(tableTiles, false);
+            // Deduplicate
+            const allTiles = new Set([...mainContainerTiles, ...tableTiles]);
+            const tilesArray = Array.from(allTiles);
+
+            // Check how many tiles already have stars
+            const tilesWithStarsInitial = tilesArray.filter(tile => tile.querySelector('.c1-favorite-star'));
+
+            // Only inject if a significant number of tiles are missing stars (more than 5% or more than 3 tiles)
+            // This prevents unnecessary refreshes when just 1-2 tiles are missing stars
+            const missingStars = tilesArray.length - tilesWithStarsInitial.length;
+            const shouldInject = missingStars > 3 && (missingStars / tilesArray.length) > 0.05;
+
+            if (shouldInject) {
+              // Inject stars into all tiles (will skip tiles that already have stars)
+              await injectStarsIntoTiles(tilesArray, false);
+
+              // Wait for injection to fully complete - ensure ALL tiles have stars
+              let attempts = 0;
+              const maxAttempts = 30; // Max 3 seconds (increased from 2)
+              while (attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Check if stars are present on ALL tiles
+                const tilesWithStars = tilesArray.filter(tile => tile.querySelector('.c1-favorite-star'));
+
+                // Break only when ALL tiles have stars (or at least 95% to handle edge cases)
+                if (tilesWithStars.length >= tilesArray.length * 0.95 || tilesWithStars.length === tilesArray.length) {
+                  break;
+                }
+
+                attempts++;
+              }
+
+              // Only refresh table if we actually injected new stars
+              await refreshTableView();
             }
           }
-
-          // Wait for injection to complete
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          // If in table view, refresh to show star column
-          await refreshTableView();
 
           return injectResult;
         case 'REMOVE_FAVORITES_REQUEST':
@@ -149,7 +176,6 @@ export function setupMessageHandler(
 
           // Clear any active favorites filter BEFORE removing stars
           // This ensures all tiles are visible when refreshTableView() re-extracts data
-          console.log('[MessageHandler] Clearing any active favorites filter before removing stars');
           await applyFavoritesFilter(false, fullyPaginated, true);
 
           // Remove stars from tiles

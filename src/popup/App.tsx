@@ -36,6 +36,8 @@ import "./components/FeaturesSection/FeaturesSection.css";
  * - Real-time progress updates during sorting and pagination
  */
 const App: React.FC = () => {
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
 
   const currentUrl = useCurrentTab();
   const {
@@ -56,6 +58,13 @@ const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isViewModeLoading, setIsViewModeLoading] = useState(false);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Load view mode on mount - always defaults to grid since storage is cleared on page load
   // Don't block on loading from content script - let it update asynchronously
@@ -335,11 +344,13 @@ const App: React.FC = () => {
 
     // If currently in table view, switch to grid view first
     if (wasInTableView) {
+      if (!isMountedRef.current) return;
       setIsViewModeLoading(true);
       setErrorMessage(null);
 
       try {
         const result = await switchViewMode("grid");
+        if (!isMountedRef.current) return;
         if (result.success) {
           setViewMode("grid");
           await chrome.storage.local.set({ "c1-view-mode": "grid" });
@@ -349,15 +360,18 @@ const App: React.FC = () => {
           return;
         }
       } catch (error) {
+        if (!isMountedRef.current) return;
         setErrorMessage("Failed to switch to grid view before filtering");
         setIsViewModeLoading(false);
         return;
       } finally {
+        if (!isMountedRef.current) return;
         setIsViewModeLoading(false);
       }
     }
 
     // Single state update instead of 4
+    if (!isMountedRef.current) return;
     setFilterState({
       isLoading: true,
       showFavoritesOnly: newShowFavoritesOnly,
@@ -370,6 +384,7 @@ const App: React.FC = () => {
         newShowFavoritesOnly
       );
 
+      if (!isMountedRef.current) return;
       if (!result.success) {
         setErrorMessage(
           `Failed to apply filter: ${result.error || "Unknown error"}`
@@ -391,9 +406,11 @@ const App: React.FC = () => {
 
       // If we were in table view, switch back to table view after filtering
       if (wasInTableView) {
+        if (!isMountedRef.current) return;
         setIsViewModeLoading(true);
         try {
           const tableResult = await switchViewMode("table");
+          if (!isMountedRef.current) return;
           if (tableResult.success) {
             setViewMode("table");
             await chrome.storage.local.set({ "c1-view-mode": "table" });
@@ -401,12 +418,15 @@ const App: React.FC = () => {
             setErrorMessage(`Filter applied but failed to return to table view: ${tableResult.error || "Unknown error"}`);
           }
         } catch (error) {
+          if (!isMountedRef.current) return;
           setErrorMessage("Filter applied but failed to return to table view");
         } finally {
+          if (!isMountedRef.current) return;
           setIsViewModeLoading(false);
         }
       }
     } catch (error) {
+      if (!isMountedRef.current) return;
       setErrorMessage("Failed to apply favorites filter");
       setFilterState(prev => ({
         ...prev,
@@ -415,6 +435,7 @@ const App: React.FC = () => {
       }));
       setMissingFavorites([]);
     } finally {
+      if (!isMountedRef.current) return;
       setFilterState(prev => ({
         ...prev,
         isLoading: false,
