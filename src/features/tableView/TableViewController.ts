@@ -186,6 +186,14 @@ export async function removeTableView(): Promise<TableViewResult> {
 
     console.log('[TableViewController] Total unique tiles collected:', allTiles.length);
 
+    // Sort tiles by their CSS 'order' property to preserve sort order
+    // This ensures that when we restore to grid view, the tiles are in the correct sorted order
+    allTiles.sort((a, b) => {
+      const orderA = parseInt(a.style.order || '0', 10);
+      const orderB = parseInt(b.style.order || '0', 10);
+      return orderA - orderB;
+    });
+
     // Restore all tiles using DocumentFragment for batched operations
     const fragment = document.createDocumentFragment();
 
@@ -212,8 +220,9 @@ export async function removeTableView(): Promise<TableViewResult> {
       tableContainer.remove();
     }
 
-    // Restore main container display
-    mainContainer.style.display = '';
+    // Restore main container display to grid with !important to maintain sort order
+    // This matches what SortOrchestrator sets during sorting
+    mainContainer.style.setProperty('display', 'grid', 'important');
 
     await emitEvent({ type: 'TABLE_VIEW_DISABLED' });
 
