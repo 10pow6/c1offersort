@@ -28,7 +28,14 @@ export async function applyFavoritesFilter(
       mainContainer.style.gridAutoFlow = "row";
     }
 
-    const tiles = findAllTiles();
+    // Get tiles from both main container and table container (if table view is active)
+    const mainTiles = findAllTiles();
+    const tableTiles = Array.from(document.querySelectorAll('#c1-offers-table [data-testid^="feed-tile-"]')) as HTMLElement[];
+
+    // Combine and deduplicate
+    const tileMap = new Map<HTMLElement, boolean>();
+    [...mainTiles, ...tableTiles].forEach(tile => tileMap.set(tile, true));
+    const tiles = Array.from(tileMap.keys());
 
     let hiddenCount = 0;
     let shownCount = 0;
@@ -43,7 +50,7 @@ export async function applyFavoritesFilter(
         if (isFavorited) {
           (tile as HTMLElement).style.removeProperty('display');
           (tile as HTMLElement).style.setProperty('grid-area', 'auto', 'important');
-          (tile as HTMLElement).style.setProperty('order', '0', 'important');
+          // Don't override the sort order - preserve it so sorting still works
           shownCount++;
           foundFavorites.add(merchantTLD);
         } else {
@@ -54,7 +61,11 @@ export async function applyFavoritesFilter(
         // Remove filter - show all tiles
         (tile as HTMLElement).style.removeProperty('display');
         (tile as HTMLElement).style.removeProperty('grid-area');
-        (tile as HTMLElement).style.removeProperty('order');
+        // Only remove order if it was set with !important by this filter
+        const orderPriority = (tile as HTMLElement).style.getPropertyPriority('order');
+        if (orderPriority === 'important') {
+          (tile as HTMLElement).style.removeProperty('order');
+        }
         shownCount++;
       }
     }

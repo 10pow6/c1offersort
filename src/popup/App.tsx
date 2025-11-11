@@ -128,7 +128,6 @@ const App: React.FC = () => {
                 listExpanded={listExpanded}
                 showTooltip={showTooltip}
                 errorMessage={errorMessage}
-                currentUrl={currentUrl}
                 onToggleFavorites={toggleFavorites}
                 onToggleFilter={toggleFilter}
                 onToggleList={toggleList}

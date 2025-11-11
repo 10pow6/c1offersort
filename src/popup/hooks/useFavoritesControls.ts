@@ -54,7 +54,13 @@ export function useFavoritesControls(isValidUrl: boolean) {
 
     try {
       if (enabled) {
+        // When disabling favorites, also disable the filter
+        if (showFavoritesOnly) {
+          await applyFavoritesFilterInActiveTab(false);
+        }
         await removeFavoritesStarsInActiveTab();
+        // Clear the filter state from storage
+        await chrome.storage.local.set({ 'c1-favorites-filter-active': false });
         setEnabled(false);
         setShowFavoritesOnly(false);
         setListExpanded(false);
@@ -71,7 +77,7 @@ export function useFavoritesControls(isValidUrl: boolean) {
     } finally {
       setIsLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, showFavoritesOnly]);
 
   const toggleFilter = useCallback(async () => {
     setIsLoading(true);

@@ -20,7 +20,6 @@ interface FavoritesControlsProps {
   listExpanded: boolean;
   showTooltip: boolean;
   errorMessage: string | null;
-  currentUrl: string | null;
   onToggleFavorites: () => void;
   onToggleFilter: () => void;
   onToggleList: () => void;
@@ -40,7 +39,6 @@ export const FavoritesControls: React.FC<FavoritesControlsProps> = ({
   listExpanded,
   showTooltip,
   errorMessage,
-  currentUrl,
   onToggleFavorites,
   onToggleFilter,
   onToggleList,
@@ -114,7 +112,6 @@ export const FavoritesControls: React.FC<FavoritesControlsProps> = ({
               favorites={favorites}
               missingFavorites={missingFavorites}
               onRemove={onRefreshFavorites}
-              currentUrl={currentUrl}
               disabled={isLoading}
             />
           )}

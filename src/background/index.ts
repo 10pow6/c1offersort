@@ -12,12 +12,20 @@ console.log(`${config.logging.contexts.background} Initializing...`);
 /**
  * Handle extension installation and updates
  */
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   console.log(`${config.logging.contexts.background} Extension installed/updated:`, details.reason);
 
   if (details.reason === 'install') {
     console.log(`${config.logging.contexts.background} First-time installation`);
-    // Could open welcome page or set default settings here
+
+    // Set default state: all features disabled
+    await chrome.storage.local.set({
+      'c1-favorites-enabled': false,
+      'c1-favorites-filter-active': false,
+      'c1-view-mode': 'grid'
+    });
+
+    console.log(`${config.logging.contexts.background} Default state initialized: all features disabled`);
   } else if (details.reason === 'update') {
     const previousVersion = details.previousVersion;
     console.log(

@@ -48,7 +48,7 @@ class EventBus {
 
     for (const handler of handlers) {
       promises.push(
-        Promise.resolve(handler(event)).catch(error => {
+        Promise.resolve().then(() => handler(event)).catch(error => {
           console.error(`[EventBus] Handler error for ${eventType}:`, error);
         })
       );

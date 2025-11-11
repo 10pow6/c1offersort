@@ -80,8 +80,12 @@ async function createTableRow(offer: OfferData, index: number, showFavorites: bo
 
   // Apply the INVISIBLE OVERLAY workaround
   saveTileState(offer.tile);
+  // Only clear display:none if it's NOT from favorites filter (which uses !important)
   if (offer.tile.style.display === 'none') {
-    offer.tile.style.display = '';
+    const priority = offer.tile.style.getPropertyPriority('display');
+    if (priority !== 'important') {
+      offer.tile.style.display = '';
+    }
   }
   applyInvisibleOverlay(offer.tile);
 

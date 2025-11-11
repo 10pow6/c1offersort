@@ -28,10 +28,12 @@ export const progressState = {
 
 console.log(`${config.logging.contexts.content} Initializing C1 Offers Sorter (REFACTORED)...`);
 
-// Clear transient state on page load (but preserve favorites enabled state)
-chrome.storage.local.remove('c1-view-mode').catch(() => {});
-chrome.storage.local.remove('c1-favorites-filter-active').catch(() => {});
-// NOTE: We intentionally DON'T clear 'c1-favorites-enabled' so it persists across page loads
+// Clear ALL feature states on page load - all features should be disabled by default
+chrome.storage.local.set({
+  'c1-view-mode': 'grid',
+  'c1-favorites-enabled': false,
+  'c1-favorites-filter-active': false
+}).catch(() => {});
 
 // Reset any favorites filter
 (async () => {
@@ -75,23 +77,9 @@ if (!isValidPage) {
 console.log(`${config.logging.contexts.content} Setting up message handler...`);
 setupMessageHandler();
 
-// Initialize favorites feature
+// Initialize favorites feature (but don't auto-enable - user must explicitly enable)
 console.log(`${config.logging.contexts.content} Initializing favorites...`);
 initializeFavorites();
-
-// Auto-enable favorites if they were previously enabled
-(async () => {
-  try {
-    const result = await chrome.storage.local.get('c1-favorites-enabled');
-    if (result['c1-favorites-enabled'] === true) {
-      console.log(`${config.logging.contexts.content} Auto-enabling favorites (was previously enabled)`);
-      const { enableFavorites } = await import('@/features/favorites/FavoritesOrchestrator');
-      await enableFavorites();
-    }
-  } catch (error) {
-    console.warn(`${config.logging.contexts.content} Failed to check favorites state:`, error);
-  }
-})();
 
 // Flush favorites on unload
 window.addEventListener('beforeunload', async () => {

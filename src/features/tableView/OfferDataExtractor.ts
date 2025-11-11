@@ -39,7 +39,12 @@ export function extractOfferData(): OfferData[] {
   const offerData: OfferData[] = [];
 
   for (const tile of uniqueTiles) {
-    // Skip filtered tiles (favorites filter uses !important)
+    // Skip filtered tiles (favorites filter uses !important for display:none)
+    // Check both inline style priority and computed style
+    if (tile.style.display === 'none' && tile.style.getPropertyPriority('display') === 'important') {
+      continue;
+    }
+
     const computedDisplay = window.getComputedStyle(tile).display;
     if (computedDisplay === 'none') {
       continue;

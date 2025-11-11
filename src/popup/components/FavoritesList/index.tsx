@@ -1,14 +1,12 @@
 import React, { useCallback } from 'react';
 import type { Favorite } from "@/features/favorites/favorites.types";
 import { removeFavorite } from "@/features/favorites/FavoritesStore";
-import { updateStarButton } from "@/features/favorites/StarButton";
 import "./FavoritesList.css";
 
 interface FavoritesListProps {
   favorites: Favorite[];
   missingFavorites: string[];
   onRemove: () => void;
-  currentUrl: string | null;
   disabled?: boolean;
 }
 
@@ -16,7 +14,6 @@ export const FavoritesList = React.memo(({
   favorites,
   missingFavorites,
   onRemove,
-  currentUrl,
   disabled = false,
 }: FavoritesListProps) => {
   const handleRemove = useCallback(async (merchantTLD: string) => {
@@ -86,8 +83,7 @@ export const FavoritesList = React.memo(({
 }, (prevProps, nextProps) => {
   // Custom comparison: only re-render if these actually changed
   return prevProps.favorites === nextProps.favorites &&
-         prevProps.missingFavorites === nextProps.missingFavorites &&
-         prevProps.currentUrl === nextProps.currentUrl;
+         prevProps.missingFavorites === nextProps.missingFavorites;
 });
 
 FavoritesList.displayName = 'FavoritesList';

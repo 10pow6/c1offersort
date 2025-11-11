@@ -38,6 +38,15 @@ export class ContentOrchestrator {
       await refreshTableView();
     });
 
+    // When favorites filter is toggled, refresh table if active
+    eventBus.on('FAVORITES_FILTER_ENABLED', async () => {
+      await refreshTableView();
+    });
+
+    eventBus.on('FAVORITES_FILTER_DISABLED', async () => {
+      await refreshTableView();
+    });
+
     // When sort completes, refresh table if in table view
     eventBus.on('SORT_COMPLETED', async () => {
       if (getViewMode() === 'table') {
@@ -138,9 +147,8 @@ export class ContentOrchestrator {
       const { filterFavorites } = await import('@/features/favorites/FavoritesOrchestrator');
       const result = await filterFavorites(showFavoritesOnly);
 
-      if (result.success) {
-        await refreshTableView();
-      }
+      // Note: refreshTableView() is called by the event listener, not here
+      // to avoid double-refresh
 
       return result;
     } catch (error) {

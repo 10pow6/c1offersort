@@ -1,0 +1,524 @@
+yarn run v1.22.22
+$ vitest
+
+[1m[44m DEV [49m[22m [34mv4.0.6 [39m[90mC:/software_development/Chrome_Extensions/c1offersort[39m
+
+[90mstderr[2m | src/core/storage/__tests__/StorageManager.test.ts[2m > [22m[2mStorageManager[2m > [22m[2msetMultiple[2m > [22m[2mshould set multiple values in storage
+[22m[39m[Storage] Error setting multiple: Error: Storage error
+    at C:/software_development/Chrome_Extensions/c1offersort/src/core/storage/__tests__/StorageManager.test.ts:113:59
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:157:11
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:753:26
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1636:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1602:10[90m)[39m
+    at runTest [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1309:12[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1468:8[90m)[39m
+    at runSuite [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1468:8[90m)[39m
+
+ [31m❯[39m src/core/storage/__tests__/StorageManager.test.ts [2m([22m[2m18 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 29[2mms[22m[39m
+       [32m✓[39m should get value from storage[32m 4[2mms[22m[39m
+       [32m✓[39m should return undefined for missing key[32m 0[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 2[2mms[22m[39m
+       [32m✓[39m should get multiple values from storage[32m 1[2mms[22m[39m
+       [32m✓[39m should handle partial results[32m 0[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 1[2mms[22m[39m
+       [32m✓[39m should set value in storage[32m 1[2mms[22m[39m
+       [32m✓[39m should handle complex data types[32m 1[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 1[2mms[22m[39m
+[31m       [31m×[31m should set multiple values in storage[39m[32m 12[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 1[2mms[22m[39m
+       [32m✓[39m should remove value from storage[32m 0[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 0[2mms[22m[39m
+       [32m✓[39m should listen to storage changes[32m 0[2mms[22m[39m
+       [32m✓[39m should not trigger for other keys[32m 1[2mms[22m[39m
+       [32m✓[39m should not trigger for non-local storage[32m 0[2mms[22m[39m
+       [32m✓[39m should unsubscribe when calling returned function[32m 0[2mms[22m[39m
+       [32m✓[39m should handle undefined values in changes[32m 0[2mms[22m[39m
+ [31m❯[39m src/features/tableView/__tests__/TileOverlayManager.test.ts [2m([22m[2m15 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 37[2mms[22m[39m
+       [32m✓[39m should save tile original styles[32m 7[2mms[22m[39m
+       [32m✓[39m should only save original state once[32m 4[2mms[22m[39m
+       [32m✓[39m should save all critical style properties[32m 3[2mms[22m[39m
+[31m       [31m×[31m should apply invisible overlay styles[39m[32m 9[2mms[22m[39m
+       [32m✓[39m should apply overflow and height constraints[32m 1[2mms[22m[39m
+       [32m✓[39m should make tile invisible but clickable[32m 1[2mms[22m[39m
+       [32m✓[39m should restore original styles[32m 2[2mms[22m[39m
+       [32m✓[39m should do nothing if no saved state[32m 0[2mms[22m[39m
+       [32m✓[39m should handle empty string styles[32m 1[2mms[22m[39m
+       [32m✓[39m should return false initially[32m 0[2mms[22m[39m
+       [32m✓[39m should return true after saving state[32m 0[2mms[22m[39m
+       [32m✓[39m should work with multiple tiles[32m 0[2mms[22m[39m
+       [32m✓[39m should preserve original state through overlay and restore[32m 2[2mms[22m[39m
+       [32m✓[39m should handle multiple overlay/restore cycles[32m 4[2mms[22m[39m
+       [32m✓[39m should not prevent garbage collection[32m 0[2mms[22m[39m
+ [32m✓[39m src/platform/dom/__tests__/TileExtractor.test.ts [2m([22m[2m38 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+[90mstdout[2m | src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22m[2mFavoritesStore[2m > [22m[2mset[2m > [22m[2mshould debounce writes to storage
+[22m[39m[FavoritesStore] Flushed 3 favorites to storage
+
+[90mstdout[2m | src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22m[2mFavoritesStore[2m > [22m[2mdelete[2m > [22m[2mshould remove favorite from cache and schedule write
+[22m[39m[FavoritesStore] Flushed 2 favorites to storage
+
+[90mstdout[2m | src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22m[2mFavoritesStore[2m > [22m[2mflush[2m > [22m[2mshould immediately write pending changes to storage
+[22m[39m[FavoritesStore] Flushed 1 favorites to storage
+
+[90mstderr[2m | src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22m[2mFavoritesStore[2m > [22m[2mwrite-through cache behavior[2m > [22m[2mshould update cache immediately but write async
+[22m[39m[FavoritesStore] Flush error: Error: Storage error
+    at C:/software_development/Chrome_Extensions/c1offersort/src/core/storage/__tests__/FavoritesStore.test.ts:316:53
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:157:11
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:753:26
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1636:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1602:10[90m)[39m
+    at runTest [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1309:12[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1468:8[90m)[39m
+    at runSuite [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1468:8[90m)[39m
+
+ [32m✓[39m src/features/sorting/__tests__/TileSorter.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [31m❯[39m src/core/storage/__tests__/FavoritesStore.test.ts [2m([22m[2m19 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 34[2mms[22m[39m
+       [32m✓[39m should load favorites from storage[32m 6[2mms[22m[39m
+[31m       [31m×[31m should return empty map if no stored data[39m[32m 8[2mms[22m[39m
+[31m       [31m×[31m should only load once and return cached data on subsequent calls[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m should return all favorites from cache[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should return a copy of the cache (not a reference)[32m 1[2mms[22m[39m
+[31m       [31m×[31m should warn if accessed before load[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should get single favorite from cache[32m 1[2mms[22m[39m
+       [32m✓[39m should return undefined for non-existent favorite[32m 0[2mms[22m[39m
+       [32m✓[39m should check if favorite exists[32m 1[2mms[22m[39m
+       [32m✓[39m should add favorite to cache and schedule write[32m 1[2mms[22m[39m
+[31m       [31m×[31m should debounce writes to storage[39m[32m 4[2mms[22m[39m
+[31m       [31m×[31m should remove favorite from cache and schedule write[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should clear all favorites and remove from storage[32m 1[2mms[22m[39m
+       [32m✓[39m should clear pending writes[32m 0[2mms[22m[39m
+       [32m✓[39m should immediately write pending changes to storage[32m 1[2mms[22m[39m
+       [32m✓[39m should do nothing if no pending writes[32m 0[2mms[22m[39m
+       [32m✓[39m should clear pending writes after flush[32m 0[2mms[22m[39m
+       [32m✓[39m should handle flush errors gracefully[32m 1[2mms[22m[39m
+       [32m✓[39m should update cache immediately but write async[32m 1[2mms[22m[39m
+ [31m❯[39m src/core/events/__tests__/EventBus.test.ts [2m([22m[2m21 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 112[2mms[22m[39m
+       [32m✓[39m should subscribe to events[32m 3[2mms[22m[39m
+       [32m✓[39m should emit events to handlers[32m 3[2mms[22m[39m
+       [32m✓[39m should not call handler if event not emitted[32m 1[2mms[22m[39m
+       [32m✓[39m should handle events with no handlers[32m 1[2mms[22m[39m
+       [32m✓[39m should unsubscribe using returned function[32m 1[2mms[22m[39m
+       [32m✓[39m should handle multiple unsubscribes safely[32m 0[2mms[22m[39m
+       [32m✓[39m should call all handlers for same event[32m 1[2mms[22m[39m
+       [32m✓[39m should handle different events independently[32m 1[2mms[22m[39m
+       [32m✓[39m should fire handler once then unsubscribe[32m 1[2mms[22m[39m
+       [32m✓[39m should support async handlers in once[32m 18[2mms[22m[39m
+       [32m✓[39m should support async handlers[32m 19[2mms[22m[39m
+       [32m✓[39m should wait for all async handlers to complete[32m 24[2mms[22m[39m
+[31m       [31m×[31m should isolate errors in handlers[39m[32m 8[2mms[22m[39m
+       [32m✓[39m should handle errors in async handlers[32m 1[2mms[22m[39m
+[31m       [31m×[31m should not break other handlers if one throws[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should clear all handlers[32m 0[2mms[22m[39m
+       [32m✓[39m should return correct listener count[32m 0[2mms[22m[39m
+       [32m✓[39m should return 0 for non-existent event[32m 0[2mms[22m[39m
+       [32m✓[39m should handle rapid sequential emits[32m 0[2mms[22m[39m
+       [32m✓[39m should handle handler that unsubscribes itself[32m 0[2mms[22m[39m
+       [32m✓[39m should handle concurrent emits[32m 25[2mms[22m[39m
+ [32m✓[39m src/platform/validation/__tests__/TileValidator.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/core/state/__tests__/StateManager.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 10 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/core/events/__tests__/EventBus.test.ts[2m > [22mEventBus[2m > [22merror handling[2m > [22mshould isolate errors in handlers
+[31m[1mError[22m: Handler error[39m
+[36m [2m❯[22m src/core/events/__tests__/EventBus.test.ts:[2m166:15[22m[39m
+    [90m164| [39m    [34mit[39m([32m'should isolate errors in handlers'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m165| [39m      [35mconst[39m errorHandler [33m=[39m vi[33m.[39m[34mfn[39m(() [33m=>[39m {
+    [90m166| [39m        [35mthrow[39m [35mnew[39m [33mError[39m([32m'Handler error'[39m)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m167| [39m      })[33m;[39m
+    [90m168| [39m      [35mconst[39m goodHandler [33m=[39m vi[33m.[39m[34mfn[39m()[33m;[39m
+[90m [2m❯[22m EventBus.emit src/core/events/EventBus.ts:[2m51:25[22m[39m
+[90m [2m❯[22m src/core/events/__tests__/EventBus.test.ts:[2m175:22[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/core/events/__tests__/EventBus.test.ts[2m > [22mEventBus[2m > [22merror handling[2m > [22mshould not break other handlers if one throws
+[31m[1mError[22m: Error 1[39m
+[36m [2m❯[22m src/core/events/__tests__/EventBus.test.ts:[2m206:29[22m[39m
+    [90m204| [39m    [34mit[39m([32m'should not break other handlers if one throws'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m205| [39m      [35mconst[39m handlers [33m=[39m [
+    [90m206| [39m        vi[33m.[39m[34mfn[39m(() [33m=>[39m { [35mthrow[39m [35mnew[39m [33mError[39m([32m'Error 1'[39m)[33m;[39m })[33m,[39m
+    [90m   | [39m                            [31m^[39m
+    [90m207| [39m        vi[33m.[39m[34mfn[39m()[33m,[39m
+    [90m208| [39m        vi[33m.[39m[34mfn[39m(() [33m=>[39m { [35mthrow[39m [35mnew[39m [33mError[39m([32m'Error 2'[39m)[33m;[39m })[33m,[39m
+[90m [2m❯[22m EventBus.emit src/core/events/EventBus.ts:[2m51:25[22m[39m
+[90m [2m❯[22m src/core/events/__tests__/EventBus.test.ts:[2m215:22[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22mFavoritesStore[2m > [22mload[2m > [22mshould return empty map if no stored data
+[31m[1mAssertionError[22m: expected 2 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m src/core/storage/__tests__/FavoritesStore.test.ts:[2m47:27[22m[39m
+    [90m 45| [39m      [35mconst[39m result [33m=[39m [35mawait[39m favoritesStore[33m.[39m[34mload[39m()[33m;[39m
+    [90m 46| [39m
+    [90m 47| [39m      [34mexpect[39m(result[33m.[39msize)[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m 48| [39m    })[33m;[39m
+    [90m 49| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22mFavoritesStore[2m > [22mload[2m > [22mshould only load once and return cached data on subsequent calls
+[31m[1mAssertionError[22m: expected "vi.fn()" to be called 1 times, but got 0 times[39m
+[36m [2m❯[22m src/core/storage/__tests__/FavoritesStore.test.ts:[2m60:34[22m[39m
+    [90m 58| [39m      [35mconst[39m result2 [33m=[39m [35mawait[39m favoritesStore[33m.[39m[34mload[39m()[33m;[39m
+    [90m 59| [39m
+    [90m 60| [39m      [34mexpect[39m(storageManager[33m.[39m[35mget[39m)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                                 [31m^[39m
+    [90m 61| [39m      [34mexpect[39m(result1[33m.[39msize)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m 62| [39m      [34mexpect[39m(result2[33m.[39msize)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22mFavoritesStore[2m > [22mgetAll[2m > [22mshould return all favorites from cache
+[31m[1mAssertionError[22m: expected 2 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m src/core/storage/__tests__/FavoritesStore.test.ts:[2m77:27[22m[39m
+    [90m 75| [39m      [35mconst[39m result [33m=[39m favoritesStore[33m.[39m[34mgetAll[39m()[33m;[39m
+    [90m 76| [39m
+    [90m 77| [39m      [34mexpect[39m(result[33m.[39msize)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m 78| [39m      expect(result.get('merchant1.com')).toEqual(storedData['merchant…
+    [90m 79| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22mFavoritesStore[2m > [22mgetAll[2m > [22mshould warn if accessed before load
+[31m[1mAssertionError[22m: expected "warn" to be called with arguments: [ Array(1) ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[36m [2m❯[22m src/core/storage/__tests__/FavoritesStore.test.ts:[2m101:27[22m[39m
+    [90m 99| [39m      favoritesStore[33m.[39m[34mgetAll[39m()[33m;[39m
+    [90m100| [39m
+    [90m101| [39m      [34mexpect[39m(consoleWarn)[33m.[39m[34mtoHaveBeenCalledWith[39m(
+    [90m   | [39m                          [31m^[39m
+    [90m102| [39m        [32m'[FavoritesStore] Accessing cache before load'[39m
+    [90m103| [39m      )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22mFavoritesStore[2m > [22mset[2m > [22mshould debounce writes to storage
+[31m[1mAssertionError[22m: expected "vi.fn()" to be called with arguments: [ 'c1-favorites', { …(2) } ][90m
+
+Received: 
+
+[1m  1st vi.fn() call:
+
+[22m[33m@@ -9,7 +9,12 @@[90m
+[2m      "merchant2.com": {[22m
+[2m        "addedAt": 456,[22m
+[2m        "merchantName": "Merchant 2",[22m
+[2m        "mileageValue": "10X",[22m
+[2m      },[22m
+[31m+     "newmerchant.com": {[90m
+[31m+       "addedAt": 1762835278706,[90m
+[31m+       "merchantName": "New Merchant",[90m
+[31m+       "mileageValue": "15X",[90m
+[31m+     },[90m
+[2m    },[22m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m src/core/storage/__tests__/FavoritesStore.test.ts:[2m196:34[22m[39m
+    [90m194| [39m      [90m// Should write once with both favorites[39m
+    [90m195| [39m      [34mexpect[39m(storageManager[33m.[39m[35mset[39m)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)[33m;[39m
+    [90m196| [39m      [34mexpect[39m(storageManager[33m.[39m[35mset[39m)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m'c1-favorites'[39m[33m,[39m {
+    [90m   | [39m                                 [31m^[39m
+    [90m197| [39m        [32m'merchant1.com'[39m[33m:[39m data1[33m,[39m
+    [90m198| [39m        [32m'merchant2.com'[39m[33m:[39m data2[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22mFavoritesStore[2m > [22mdelete[2m > [22mshould remove favorite from cache and schedule write
+[31m[1mAssertionError[22m: expected "vi.fn()" to be called with arguments: [ 'c1-favorites', {} ][90m
+
+Received: 
+
+[1m  1st vi.fn() call:
+
+[22m[2m  [[22m
+[2m    "c1-favorites",[22m
+[32m-   {},[90m
+[31m+   {[90m
+[31m+     "merchant2.com": {[90m
+[31m+       "addedAt": 456,[90m
+[31m+       "merchantName": "Merchant 2",[90m
+[31m+       "mileageValue": "10X",[90m
+[31m+     },[90m
+[31m+     "newmerchant.com": {[90m
+[31m+       "addedAt": 1762835278706,[90m
+[31m+       "merchantName": "New Merchant",[90m
+[31m+       "mileageValue": "15X",[90m
+[31m+     },[90m
+[31m+   },[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m src/core/storage/__tests__/FavoritesStore.test.ts:[2m221:34[22m[39m
+    [90m219| [39m      [35mawait[39m [33mPromise[39m[33m.[39m[34mresolve[39m()[33m;[39m
+    [90m220| [39m
+    [90m221| [39m      expect(storageManager.set).toHaveBeenCalledWith('c1-favorites', …
+    [90m   | [39m                                 [31m^[39m
+    [90m222| [39m    })[33m;[39m
+    [90m223| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/core/storage/__tests__/StorageManager.test.ts[2m > [22mStorageManager[2m > [22msetMultiple[2m > [22mshould set multiple values in storage
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/core/storage/__tests__/StorageManager.test.ts:[2m133:22[22m[39m
+    [90m131| [39m      [35mconst[39m result [33m=[39m [35mawait[39m storageManager[33m.[39m[34msetMultiple[39m(values)[33m;[39m
+    [90m132| [39m
+    [90m133| [39m      [34mexpect[39m(result)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                     [31m^[39m
+    [90m134| [39m      [34mexpect[39m(chrome[33m.[39mstorage[33m.[39mlocal[33m.[39m[35mset[39m)[33m.[39m[34mtoHaveBeenCalledWith[39m(values)[33m;[39m
+    [90m135| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/features/tableView/__tests__/TileOverlayManager.test.ts[2m > [22mTileOverlayManager[2m > [22mapplyInvisibleOverlay[2m > [22mshould apply invisible overlay styles
+[31m[1mAssertionError[22m: expected '0px' to be '0' // Object.is equality[39m
+
+Expected: [32m"0"[39m
+Received: [31m"0[7mpx[27m"[39m
+
+[36m [2m❯[22m src/features/tableView/__tests__/TileOverlayManager.test.ts:[2m80:30[22m[39m
+    [90m 78| [39m
+    [90m 79| [39m      [34mexpect[39m(tile[33m.[39mstyle[33m.[39mposition)[33m.[39m[34mtoBe[39m([32m'absolute'[39m)[33m;[39m
+    [90m 80| [39m      [34mexpect[39m(tile[33m.[39mstyle[33m.[39mtop)[33m.[39m[34mtoBe[39m([32m'0'[39m)[33m;[39m
+    [90m   | [39m                             [31m^[39m
+    [90m 81| [39m      [34mexpect[39m(tile[33m.[39mstyle[33m.[39mleft)[33m.[39m[34mtoBe[39m([32m'0'[39m)[33m;[39m
+    [90m 82| [39m      [34mexpect[39m(tile[33m.[39mstyle[33m.[39mwidth)[33m.[39m[34mtoBe[39m([32m'100%'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (8)[39m
+[2m      Tests [22m [1m[31m10 failed[39m[22m[2m | [22m[1m[32m170 passed[39m[22m[90m (180)[39m
+[2m   Start at [22m 20:27:57
+[2m   Duration [22m 2.27s[2m (transform 636ms, setup 1.59s, collect 652ms, tests 275ms, environment 4.60s, prepare 167ms)[22m
+
+[1m[41m FAIL [49m[22m [31mTests failed. Watching for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2msrc/features/tableView/__tests__/TileOverlayManager.test.ts [22m[34mx1 [34m[39m
+
+ [31m❯[39m src/core/events/__tests__/EventBus.test.ts [2m([22m[2m21 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 112[2mms[22m[39m
+       [32m✓[39m should subscribe to events[32m 3[2mms[22m[39m
+       [32m✓[39m should emit events to handlers[32m 3[2mms[22m[39m
+       [32m✓[39m should not call handler if event not emitted[32m 1[2mms[22m[39m
+       [32m✓[39m should handle events with no handlers[32m 1[2mms[22m[39m
+       [32m✓[39m should unsubscribe using returned function[32m 1[2mms[22m[39m
+       [32m✓[39m should handle multiple unsubscribes safely[32m 0[2mms[22m[39m
+       [32m✓[39m should call all handlers for same event[32m 1[2mms[22m[39m
+       [32m✓[39m should handle different events independently[32m 1[2mms[22m[39m
+       [32m✓[39m should fire handler once then unsubscribe[32m 1[2mms[22m[39m
+       [32m✓[39m should support async handlers in once[32m 18[2mms[22m[39m
+       [32m✓[39m should support async handlers[32m 19[2mms[22m[39m
+       [32m✓[39m should wait for all async handlers to complete[32m 24[2mms[22m[39m
+[31m       [31m×[31m should isolate errors in handlers[39m[32m 8[2mms[22m[39m
+       [32m✓[39m should handle errors in async handlers[32m 1[2mms[22m[39m
+[31m       [31m×[31m should not break other handlers if one throws[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should clear all handlers[32m 0[2mms[22m[39m
+       [32m✓[39m should return correct listener count[32m 0[2mms[22m[39m
+       [32m✓[39m should return 0 for non-existent event[32m 0[2mms[22m[39m
+       [32m✓[39m should handle rapid sequential emits[32m 0[2mms[22m[39m
+       [32m✓[39m should handle handler that unsubscribes itself[32m 0[2mms[22m[39m
+       [32m✓[39m should handle concurrent emits[32m 25[2mms[22m[39m
+ [31m❯[39m src/core/storage/__tests__/StorageManager.test.ts [2m([22m[2m18 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 29[2mms[22m[39m
+       [32m✓[39m should get value from storage[32m 4[2mms[22m[39m
+       [32m✓[39m should return undefined for missing key[32m 0[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 2[2mms[22m[39m
+       [32m✓[39m should get multiple values from storage[32m 1[2mms[22m[39m
+       [32m✓[39m should handle partial results[32m 0[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 1[2mms[22m[39m
+       [32m✓[39m should set value in storage[32m 1[2mms[22m[39m
+       [32m✓[39m should handle complex data types[32m 1[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 1[2mms[22m[39m
+[31m       [31m×[31m should set multiple values in storage[39m[32m 12[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 1[2mms[22m[39m
+       [32m✓[39m should remove value from storage[32m 0[2mms[22m[39m
+       [32m✓[39m should handle storage errors[32m 0[2mms[22m[39m
+       [32m✓[39m should listen to storage changes[32m 0[2mms[22m[39m
+       [32m✓[39m should not trigger for other keys[32m 1[2mms[22m[39m
+       [32m✓[39m should not trigger for non-local storage[32m 0[2mms[22m[39m
+       [32m✓[39m should unsubscribe when calling returned function[32m 0[2mms[22m[39m
+       [32m✓[39m should handle undefined values in changes[32m 0[2mms[22m[39m
+ [31m❯[39m src/core/storage/__tests__/FavoritesStore.test.ts [2m([22m[2m19 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 34[2mms[22m[39m
+       [32m✓[39m should load favorites from storage[32m 6[2mms[22m[39m
+[31m       [31m×[31m should return empty map if no stored data[39m[32m 8[2mms[22m[39m
+[31m       [31m×[31m should only load once and return cached data on subsequent calls[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m should return all favorites from cache[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should return a copy of the cache (not a reference)[32m 1[2mms[22m[39m
+[31m       [31m×[31m should warn if accessed before load[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should get single favorite from cache[32m 1[2mms[22m[39m
+       [32m✓[39m should return undefined for non-existent favorite[32m 0[2mms[22m[39m
+       [32m✓[39m should check if favorite exists[32m 1[2mms[22m[39m
+       [32m✓[39m should add favorite to cache and schedule write[32m 1[2mms[22m[39m
+[31m       [31m×[31m should debounce writes to storage[39m[32m 4[2mms[22m[39m
+[31m       [31m×[31m should remove favorite from cache and schedule write[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should clear all favorites and remove from storage[32m 1[2mms[22m[39m
+       [32m✓[39m should clear pending writes[32m 0[2mms[22m[39m
+       [32m✓[39m should immediately write pending changes to storage[32m 1[2mms[22m[39m
+       [32m✓[39m should do nothing if no pending writes[32m 0[2mms[22m[39m
+       [32m✓[39m should clear pending writes after flush[32m 0[2mms[22m[39m
+       [32m✓[39m should handle flush errors gracefully[32m 1[2mms[22m[39m
+       [32m✓[39m should update cache immediately but write async[32m 1[2mms[22m[39m
+ [32m✓[39m src/features/tableView/__tests__/TileOverlayManager.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[31m9 failed[39m[22m[2m | [22m[1m[32m64 passed[39m[22m[90m (73)[39m
+[2m   Start at [22m 20:28:38
+[2m   Duration [22m 162ms
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2msrc/core/storage/__tests__/StorageManager.test.ts [22m[34mx1 [34m[39m
+
+ [31m❯[39m src/core/events/__tests__/EventBus.test.ts [2m([22m[2m21 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 112[2mms[22m[39m
+       [32m✓[39m should subscribe to events[32m 3[2mms[22m[39m
+       [32m✓[39m should emit events to handlers[32m 3[2mms[22m[39m
+       [32m✓[39m should not call handler if event not emitted[32m 1[2mms[22m[39m
+       [32m✓[39m should handle events with no handlers[32m 1[2mms[22m[39m
+       [32m✓[39m should unsubscribe using returned function[32m 1[2mms[22m[39m
+       [32m✓[39m should handle multiple unsubscribes safely[32m 0[2mms[22m[39m
+       [32m✓[39m should call all handlers for same event[32m 1[2mms[22m[39m
+       [32m✓[39m should handle different events independently[32m 1[2mms[22m[39m
+       [32m✓[39m should fire handler once then unsubscribe[32m 1[2mms[22m[39m
+       [32m✓[39m should support async handlers in once[32m 18[2mms[22m[39m
+       [32m✓[39m should support async handlers[32m 19[2mms[22m[39m
+       [32m✓[39m should wait for all async handlers to complete[32m 24[2mms[22m[39m
+[31m       [31m×[31m should isolate errors in handlers[39m[32m 8[2mms[22m[39m
+       [32m✓[39m should handle errors in async handlers[32m 1[2mms[22m[39m
+[31m       [31m×[31m should not break other handlers if one throws[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should clear all handlers[32m 0[2mms[22m[39m
+       [32m✓[39m should return correct listener count[32m 0[2mms[22m[39m
+       [32m✓[39m should return 0 for non-existent event[32m 0[2mms[22m[39m
+       [32m✓[39m should handle rapid sequential emits[32m 0[2mms[22m[39m
+       [32m✓[39m should handle handler that unsubscribes itself[32m 0[2mms[22m[39m
+       [32m✓[39m should handle concurrent emits[32m 25[2mms[22m[39m
+ [31m❯[39m src/core/storage/__tests__/FavoritesStore.test.ts [2m([22m[2m19 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 34[2mms[22m[39m
+       [32m✓[39m should load favorites from storage[32m 6[2mms[22m[39m
+[31m       [31m×[31m should return empty map if no stored data[39m[32m 8[2mms[22m[39m
+[31m       [31m×[31m should only load once and return cached data on subsequent calls[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m should return all favorites from cache[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should return a copy of the cache (not a reference)[32m 1[2mms[22m[39m
+[31m       [31m×[31m should warn if accessed before load[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should get single favorite from cache[32m 1[2mms[22m[39m
+       [32m✓[39m should return undefined for non-existent favorite[32m 0[2mms[22m[39m
+       [32m✓[39m should check if favorite exists[32m 1[2mms[22m[39m
+       [32m✓[39m should add favorite to cache and schedule write[32m 1[2mms[22m[39m
+[31m       [31m×[31m should debounce writes to storage[39m[32m 4[2mms[22m[39m
+[31m       [31m×[31m should remove favorite from cache and schedule write[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should clear all favorites and remove from storage[32m 1[2mms[22m[39m
+       [32m✓[39m should clear pending writes[32m 0[2mms[22m[39m
+       [32m✓[39m should immediately write pending changes to storage[32m 1[2mms[22m[39m
+       [32m✓[39m should do nothing if no pending writes[32m 0[2mms[22m[39m
+       [32m✓[39m should clear pending writes after flush[32m 0[2mms[22m[39m
+       [32m✓[39m should handle flush errors gracefully[32m 1[2mms[22m[39m
+       [32m✓[39m should update cache immediately but write async[32m 1[2mms[22m[39m
+ [32m✓[39m src/core/storage/__tests__/StorageManager.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m50 passed[39m[22m[90m (58)[39m
+[2m   Start at [22m 20:28:52
+[2m   Duration [22m 151ms
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2msrc/core/storage/__tests__/FavoritesStore.test.ts [22m[34mx1 [34m[39m
+
+ [31m❯[39m src/core/events/__tests__/EventBus.test.ts [2m([22m[2m21 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 112[2mms[22m[39m
+       [32m✓[39m should subscribe to events[32m 3[2mms[22m[39m
+       [32m✓[39m should emit events to handlers[32m 3[2mms[22m[39m
+       [32m✓[39m should not call handler if event not emitted[32m 1[2mms[22m[39m
+       [32m✓[39m should handle events with no handlers[32m 1[2mms[22m[39m
+       [32m✓[39m should unsubscribe using returned function[32m 1[2mms[22m[39m
+       [32m✓[39m should handle multiple unsubscribes safely[32m 0[2mms[22m[39m
+       [32m✓[39m should call all handlers for same event[32m 1[2mms[22m[39m
+       [32m✓[39m should handle different events independently[32m 1[2mms[22m[39m
+       [32m✓[39m should fire handler once then unsubscribe[32m 1[2mms[22m[39m
+       [32m✓[39m should support async handlers in once[32m 18[2mms[22m[39m
+       [32m✓[39m should support async handlers[32m 19[2mms[22m[39m
+       [32m✓[39m should wait for all async handlers to complete[32m 24[2mms[22m[39m
+[31m       [31m×[31m should isolate errors in handlers[39m[32m 8[2mms[22m[39m
+       [32m✓[39m should handle errors in async handlers[32m 1[2mms[22m[39m
+[31m       [31m×[31m should not break other handlers if one throws[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should clear all handlers[32m 0[2mms[22m[39m
+       [32m✓[39m should return correct listener count[32m 0[2mms[22m[39m
+       [32m✓[39m should return 0 for non-existent event[32m 0[2mms[22m[39m
+       [32m✓[39m should handle rapid sequential emits[32m 0[2mms[22m[39m
+       [32m✓[39m should handle handler that unsubscribes itself[32m 0[2mms[22m[39m
+       [32m✓[39m should handle concurrent emits[32m 25[2mms[22m[39m
+[90mstdout[2m | src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22m[2mFavoritesStore[2m > [22m[2mset[2m > [22m[2mshould debounce writes to storage
+[22m[39m[FavoritesStore] Flushed 2 favorites to storage
+
+[90mstdout[2m | src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22m[2mFavoritesStore[2m > [22m[2mdelete[2m > [22m[2mshould remove favorite from cache and schedule write
+[22m[39m[FavoritesStore] Flushed 0 favorites to storage
+
+[90mstdout[2m | src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22m[2mFavoritesStore[2m > [22m[2mflush[2m > [22m[2mshould immediately write pending changes to storage
+[22m[39m[FavoritesStore] Flushed 1 favorites to storage
+
+[90mstderr[2m | src/core/storage/__tests__/FavoritesStore.test.ts[2m > [22m[2mFavoritesStore[2m > [22m[2mwrite-through cache behavior[2m > [22m[2mshould update cache immediately but write async
+[22m[39m[FavoritesStore] Flush error: Error: Storage error
+    at C:/software_development/Chrome_Extensions/c1offersort/src/core/storage/__tests__/FavoritesStore.test.ts:326:53
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:157:11
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:753:26
+    at [90mfile:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1636:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1602:10[90m)[39m
+    at runTest [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1309:12[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1468:8[90m)[39m
+    at runSuite [90m(file:///C:/software_development/Chrome_Extensions/c1offersort/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1468:8[90m)[39m
+
+ [32m✓[39m src/core/storage/__tests__/FavoritesStore.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m38 passed[39m[22m[90m (40)[39m
+[2m   Start at [22m 20:29:06
+[2m   Duration [22m 177ms
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2msrc/core/events/EventBus.ts [22m[34mx1 [34m[39m
+
+ [32m✓[39m src/core/events/__tests__/EventBus.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 87[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m21 passed[39m[22m[90m (21)[39m
+[2m   Start at [22m 20:29:38
+[2m   Duration [22m 225ms
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+error Command failed with exit code 1.
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.
