@@ -113,15 +113,18 @@ export class SortOrchestrator {
       };
 
       setSortResult(result);
-      await emitEvent({ type: 'SORT_COMPLETED', tilesProcessed: sortedTiles.length, pagesLoaded });
 
-      // If was in table view, restore it
+      // If was in table view, restore it BEFORE emitting SORT_COMPLETED
+      // This ensures the table is created with the correct sorted order
       if (wasInTableView) {
         console.log('[SortOrchestrator] Restoring table view...');
         await emitEvent({ type: 'VIEW_MODE_CHANGING', fromMode: 'grid', toMode: 'table' });
         setViewMode('table');
         await emitEvent({ type: 'VIEW_MODE_CHANGED', mode: 'table' });
       }
+
+      // Emit SORT_COMPLETED after view mode is restored
+      await emitEvent({ type: 'SORT_COMPLETED', tilesProcessed: sortedTiles.length, pagesLoaded });
 
       return result;
     } catch (error) {
