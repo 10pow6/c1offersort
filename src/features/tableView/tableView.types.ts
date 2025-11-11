@@ -19,6 +19,7 @@ export interface TileState {
     pointerEvents: string;
     zIndex: string;
     display: string;
+    displayPriority: string; // Store !important priority for display
   };
 }
 

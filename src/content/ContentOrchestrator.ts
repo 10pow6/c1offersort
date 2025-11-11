@@ -29,6 +29,21 @@ export class ContentOrchestrator {
       }
     });
 
+    // When table view is disabled, re-apply favorites filter if it was active
+    eventBus.on('TABLE_VIEW_DISABLED', async () => {
+      try {
+        const result = await chrome.storage.local.get('c1-favorites-filter-active');
+        const isFilterActive = result['c1-favorites-filter-active'] === true;
+
+        if (isFilterActive) {
+          const { applyFavoritesFilter } = await import('@/features/favorites/FavoritesFilter');
+          await applyFavoritesFilter(true);
+        }
+      } catch (error) {
+        console.error('[ContentOrchestrator] Error re-applying favorites filter after table view disabled:', error);
+      }
+    });
+
     // When favorites toggle, refresh table if active (but don't re-extract data)
     eventBus.on('FAVORITES_ENABLED', async () => {
       await refreshTableView(false); // Don't re-extract, just re-render

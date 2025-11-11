@@ -192,9 +192,16 @@ export async function removeTableView(): Promise<TableViewResult> {
     allTiles.forEach(tile => {
       restoreTileState(tile);
       // Ensure display is not 'none' unless it was originally (favorites filter uses !important)
-      if (tile.style.display === 'none' && tile.style.getPropertyPriority('display') !== 'important') {
-        tile.style.display = '';
+      // Only clear display:none from pagination, NOT from favorites filter
+      const displayValue = tile.style.display;
+      const displayPriority = tile.style.getPropertyPriority('display');
+
+      if (displayValue === 'none' && displayPriority !== 'important') {
+        // This tile was hidden by pagination, not favorites filter - show it
+        tile.style.removeProperty('display');
       }
+      // Tiles with display: none !important (from favorites filter) are left alone
+
       fragment.appendChild(tile);
     });
 
@@ -321,7 +328,15 @@ async function renderCurrentPage(): Promise<void> {
   if (existingTable) {
     const tilesInOldTable = Array.from(existingTable.querySelectorAll('[data-testid^="feed-tile-"]')) as HTMLElement[];
     tilesInOldTable.forEach(tile => {
-      tile.style.display = 'none';
+      // Hide tile for pagination, but preserve !important if it was set by favorites filter
+      const currentPriority = tile.style.getPropertyPriority('display');
+      if (currentPriority === 'important') {
+        // Tile is filtered by favorites - keep the !important priority
+        tile.style.setProperty('display', 'none', 'important');
+      } else {
+        // Normal pagination hiding
+        tile.style.display = 'none';
+      }
       mainContainer.appendChild(tile);
     });
     existingTable.remove();

@@ -22,7 +22,11 @@ export async function applyFavoritesFilter(
     const favoritedTLDs = new Set(favorites.map((fav) => fav.merchantTLD));
 
     const mainContainer = findMainContainer();
-    if (mainContainer && showFavoritesOnly) {
+    // Check if table view is active
+    const isTableViewActive = !!document.getElementById('c1-offers-table-container');
+
+    if (mainContainer && showFavoritesOnly && !isTableViewActive) {
+      // Only modify main container display if NOT in table view
       mainContainer.style.setProperty("display", "grid", "important");
       mainContainer.style.gridTemplateAreas = "none";
       mainContainer.style.gridAutoFlow = "row";
@@ -79,8 +83,9 @@ export async function applyFavoritesFilter(
       }
     }
 
-    // Reset container style if removing filter
-    if (!showFavoritesOnly && mainContainer) {
+    // Reset container style if removing filter (but only if not in table view)
+    if (!showFavoritesOnly && mainContainer && !isTableViewActive) {
+      // Only reset main container display if NOT in table view
       mainContainer.style.removeProperty('display');
       mainContainer.style.removeProperty('grid-template-areas');
       mainContainer.style.removeProperty('grid-auto-flow');

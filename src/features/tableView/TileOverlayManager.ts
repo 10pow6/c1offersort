@@ -35,6 +35,7 @@ export function saveTileState(tile: HTMLElement): void {
       pointerEvents: tile.style.pointerEvents,
       zIndex: tile.style.zIndex,
       display: tile.style.display,
+      displayPriority: tile.style.getPropertyPriority('display'), // Save !important priority
     },
   };
 
@@ -76,7 +77,13 @@ export function restoreTileState(tile: HTMLElement): void {
   tile.style.opacity = originalStyles.opacity;
   tile.style.pointerEvents = originalStyles.pointerEvents;
   tile.style.zIndex = originalStyles.zIndex;
-  tile.style.display = originalStyles.display;
+
+  // Restore display with original priority (!important if it was set)
+  if (originalStyles.display) {
+    tile.style.setProperty('display', originalStyles.display, originalStyles.displayPriority);
+  } else {
+    tile.style.removeProperty('display');
+  }
 }
 
 /**
