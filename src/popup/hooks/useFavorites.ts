@@ -1,40 +1,32 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { getFavorites } from "../../utils/favoritesManager";
-import type { FavoritedOffer } from "../../types";
+import { useState, useEffect, useCallback } from "react";
+import { getFavorites } from "@/features/favorites/FavoritesStore";
+import type { Favorite } from "@/features/favorites/favorites.types";
 
 /**
  * Custom hook for managing favorites state from Chrome Storage.
  * Automatically loads favorites when the component mounts and provides a refresh function.
- * URL-aware: loads favorites specific to the current tab's URL.
+ * Uses the new refactored favorites system.
  *
- * @param currentUrl - The current tab's URL to determine which favorites to load
+ * @param _currentUrl - Not used in new system (kept for compatibility)
  * @returns Favorites data, count, and refresh function
  */
-export function useFavorites(currentUrl: string | null) {
-  const [favorites, setFavorites] = useState<FavoritedOffer[]>([]);
+export function useFavorites(_currentUrl: string | null) {
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [favoritesCount, setFavoritesCount] = useState(0);
-  const currentUrlRef = useRef(currentUrl);
 
-  useEffect(() => {
-    currentUrlRef.current = currentUrl;
-  }, [currentUrl]);
-
-  useEffect(() => {
-    async function loadFavorites() {
-      if (!currentUrl) return;
-      const loadedFavorites = await getFavorites(currentUrl);
-      setFavorites(loadedFavorites);
-      setFavoritesCount(loadedFavorites.length);
-    }
-    loadFavorites();
-  }, [currentUrl]);
-
-  const refreshFavorites = useCallback(async () => {
-    if (!currentUrlRef.current) return;
-    const loadedFavorites = await getFavorites(currentUrlRef.current);
+  const loadFavorites = useCallback(async () => {
+    const loadedFavorites = await getFavorites();
     setFavorites(loadedFavorites);
     setFavoritesCount(loadedFavorites.length);
   }, []);
+
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
+
+  const refreshFavorites = useCallback(async () => {
+    await loadFavorites();
+  }, [loadFavorites]);
 
   return {
     favorites,

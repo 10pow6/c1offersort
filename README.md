@@ -81,6 +81,34 @@ Read the full [Privacy Policy](docs/PRIVACY.md).
 - **Chrome**: Version 109 or later
 - **Edge**: Chromium-based versions supported
 
+## Architecture
+
+This extension uses a **modular, feature-based architecture** for maintainability and extensibility:
+
+```
+src/
+├── core/                    # Infrastructure layer
+│   ├── state/              # Observable state management
+│   ├── events/             # Type-safe event system
+│   └── storage/            # Storage abstraction layer
+├── platform/               # Platform adapters
+│   ├── dom/               # DOM operations and queries
+│   ├── chrome/            # Chrome API wrappers
+│   └── validation/        # Data validation and security
+├── features/              # Feature modules
+│   ├── sorting/          # Offer sorting logic
+│   ├── tableView/        # Table view rendering
+│   └── favorites/        # Favorites management
+├── content/              # Content script orchestration
+└── popup/                # React UI components
+```
+
+**Key Design Principles:**
+- **Separation of Concerns**: Each module has a single, clear responsibility
+- **Type Safety**: Full TypeScript coverage with strict typing
+- **Event-Driven**: Features communicate via typed event bus
+- **Performance Optimized**: Batched DOM operations, requestAnimationFrame scheduling, caching
+
 ## Development
 
 Want to contribute or build from source?
