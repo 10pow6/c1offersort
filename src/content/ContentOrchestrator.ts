@@ -29,28 +29,28 @@ export class ContentOrchestrator {
       }
     });
 
-    // When favorites toggle, refresh table if active
+    // When favorites toggle, refresh table if active (but don't re-extract data)
     eventBus.on('FAVORITES_ENABLED', async () => {
-      await refreshTableView();
+      await refreshTableView(false); // Don't re-extract, just re-render
     });
 
     eventBus.on('FAVORITES_DISABLED', async () => {
-      await refreshTableView();
+      await refreshTableView(false); // Don't re-extract, just re-render
     });
 
-    // When favorites filter is toggled, refresh table if active
+    // When favorites filter is toggled, refresh table if active (but don't re-extract data)
     eventBus.on('FAVORITES_FILTER_ENABLED', async () => {
-      await refreshTableView();
+      await refreshTableView(false); // Don't re-extract, just re-filter and re-render
     });
 
     eventBus.on('FAVORITES_FILTER_DISABLED', async () => {
-      await refreshTableView();
+      await refreshTableView(false); // Don't re-extract, just re-filter and re-render
     });
 
-    // When sort completes, refresh table if in table view
+    // When sort completes, refresh table if in table view (and re-extract to get new order)
     eventBus.on('SORT_COMPLETED', async () => {
       if (getViewMode() === 'table') {
-        await refreshTableView();
+        await refreshTableView(true); // Re-extract data to get new sort order
       }
     });
   }
@@ -103,9 +103,8 @@ export class ContentOrchestrator {
       const { enableFavorites } = await import('@/features/favorites/FavoritesOrchestrator');
       const result = await enableFavorites();
 
-      if (result.success) {
-        await refreshTableView();
-      }
+      // Note: refreshTableView() will be called by the FAVORITES_ENABLED event listener
+      // No need to call it here to avoid double refresh
 
       return result;
     } catch (error) {
@@ -125,9 +124,8 @@ export class ContentOrchestrator {
       const { disableFavorites } = await import('@/features/favorites/FavoritesOrchestrator');
       const result = await disableFavorites();
 
-      if (result.success) {
-        await refreshTableView();
-      }
+      // Note: refreshTableView() will be called by the FAVORITES_DISABLED event listener
+      // No need to call it here to avoid double refresh
 
       return result;
     } catch (error) {

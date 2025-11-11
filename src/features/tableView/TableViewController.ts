@@ -18,6 +18,7 @@ const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
 let totalPages = 1;
 let allOffers: any[] = [];
+let filteredOffers: any[] = []; // Filtered offers based on favorites filter
 let isApplying = false;
 
 /**
@@ -64,10 +65,6 @@ export async function applyTableView(): Promise<TableViewResult> {
       };
     }
 
-    // Calculate pagination
-    currentPage = 1;
-    totalPages = Math.ceil(allOffers.length / ITEMS_PER_PAGE);
-
     // Check if favorites enabled
     const showFavorites = await (async () => {
       try {
@@ -77,6 +74,34 @@ export async function applyTableView(): Promise<TableViewResult> {
         return false;
       }
     })();
+
+    // Check if favorites filter is active and filter offers accordingly
+    const favoritesFilterActive = await (async () => {
+      try {
+        const result = await chrome.storage.local.get('c1-favorites-filter-active');
+        return result['c1-favorites-filter-active'] === true;
+      } catch {
+        return false;
+      }
+    })();
+
+    filteredOffers = allOffers;
+    if (favoritesFilterActive) {
+      try {
+        const { getFavorites } = await import('@/features/favorites/FavoritesStore');
+        const favorites = await getFavorites();
+        const favoritedTLDs = new Set(favorites.map(fav => fav.merchantTLD));
+        if (favoritedTLDs.size > 0) {
+          filteredOffers = allOffers.filter(offer => favoritedTLDs.has(offer.merchantTLD));
+        }
+      } catch {
+        // If we can't get favorites, don't filter
+      }
+    }
+
+    // Calculate pagination based on filtered offers
+    currentPage = 1;
+    totalPages = Math.ceil(filteredOffers.length / ITEMS_PER_PAGE);
 
     // Hide main container
     mainContainer.style.display = 'none';
@@ -94,8 +119,8 @@ export async function applyTableView(): Promise<TableViewResult> {
     `;
     mainContainer.parentElement?.insertBefore(tableContainer, mainContainer);
 
-    // Get first page
-    const firstPageOffers = allOffers.slice(0, ITEMS_PER_PAGE);
+    // Get first page of filtered offers
+    const firstPageOffers = filteredOffers.slice(0, ITEMS_PER_PAGE);
 
     // Create table
     const table = await createTable(firstPageOffers, showFavorites);
@@ -105,11 +130,11 @@ export async function applyTableView(): Promise<TableViewResult> {
     const paginationControls = createPaginationControls();
     tableContainer.appendChild(paginationControls);
 
-    await emitEvent({ type: 'TABLE_VIEW_ENABLED', offersShown: allOffers.length });
+    await emitEvent({ type: 'TABLE_VIEW_ENABLED', offersShown: filteredOffers.length });
 
     return {
       success: true,
-      offersShown: allOffers.length,
+      offersShown: filteredOffers.length,
     };
   } catch (error) {
     console.error('[TableViewController] Error:', error);
@@ -198,9 +223,10 @@ export async function removeTableView(): Promise<TableViewResult> {
 }
 
 /**
- * Refresh table view (re-extract data and re-render)
+ * Refresh table view (re-render with current data, optionally re-extract)
+ * @param reExtractData - If true, re-extract data from DOM. If false, use cached allOffers.
  */
-export async function refreshTableView(): Promise<void> {
+export async function refreshTableView(reExtractData: boolean = false): Promise<void> {
   if (!isTableViewActive()) {
     return;
   }
@@ -220,9 +246,38 @@ export async function refreshTableView(): Promise<void> {
   // Update width
   tableContainer.style.maxWidth = showFavorites ? '1500px' : '1400px';
 
-  // Re-extract data
-  allOffers = extractOfferData();
-  totalPages = Math.ceil(allOffers.length / ITEMS_PER_PAGE);
+  // Only re-extract if explicitly requested (e.g., after sort)
+  if (reExtractData) {
+    allOffers = extractOfferData();
+  }
+  // Otherwise use cached allOffers to maintain stable order
+
+  // Check if favorites filter is active and filter offers accordingly
+  const favoritesFilterActive = await (async () => {
+    try {
+      const result = await chrome.storage.local.get('c1-favorites-filter-active');
+      return result['c1-favorites-filter-active'] === true;
+    } catch {
+      return false;
+    }
+  })();
+
+  filteredOffers = allOffers;
+  if (favoritesFilterActive) {
+    try {
+      const { getFavorites } = await import('@/features/favorites/FavoritesStore');
+      const favorites = await getFavorites();
+      const favoritedTLDs = new Set(favorites.map(fav => fav.merchantTLD));
+      if (favoritedTLDs.size > 0) {
+        filteredOffers = allOffers.filter(offer => favoritedTLDs.has(offer.merchantTLD));
+      }
+    } catch {
+      // If we can't get favorites, don't filter
+    }
+  }
+
+  // Calculate pagination based on filtered offers
+  totalPages = Math.ceil(filteredOffers.length / ITEMS_PER_PAGE);
 
   if (currentPage > totalPages && totalPages > 0) {
     currentPage = totalPages;
@@ -247,10 +302,6 @@ async function renderCurrentPage(): Promise<void> {
   const mainContainer = findMainContainer();
   if (!mainContainer) return;
 
-  const start = (currentPage - 1) * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
-  const pageOffers = allOffers.slice(start, end);
-
   const showFavorites = await (async () => {
     try {
       const result = await chrome.storage.local.get('c1-favorites-enabled');
@@ -259,6 +310,11 @@ async function renderCurrentPage(): Promise<void> {
       return false;
     }
   })();
+
+  // Use filteredOffers which was already calculated by refreshTableView
+  const start = (currentPage - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const pageOffers = filteredOffers.slice(start, end);
 
   // Move tiles from old table back to main container (hidden)
   const existingTable = document.getElementById(TABLE_ID);
@@ -363,8 +419,8 @@ function stylePageButton(button: HTMLButtonElement): void {
 
 function updatePageInfo(pageInfo: HTMLElement): void {
   const start = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-  const end = Math.min(currentPage * ITEMS_PER_PAGE, allOffers.length);
-  pageInfo.textContent = `Showing ${start}-${end} of ${allOffers.length} offers (Page ${currentPage} of ${totalPages})`;
+  const end = Math.min(currentPage * ITEMS_PER_PAGE, filteredOffers.length);
+  pageInfo.textContent = `Showing ${start}-${end} of ${filteredOffers.length} offers (Page ${currentPage} of ${totalPages})`;
 }
 
 function updatePaginationButtons(): void {

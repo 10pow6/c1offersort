@@ -24,31 +24,22 @@ export function extractOfferData(): OfferData[] {
   [...mainTiles, ...tableTiles].forEach(tile => tileMap.set(tile, true));
   const uniqueTiles = Array.from(tileMap.keys());
 
-  // Temporarily clear inline display:none from pagination (but NOT from favorites filter)
-  const tilesWithDisplayNone: HTMLElement[] = [];
+  // Temporarily clear ALL inline display:none (including from favorites filter and pagination)
+  // We need to extract ALL tiles regardless of current filter state
+  const tilesWithDisplayNone: Array<{ tile: HTMLElement; priority: string }> = [];
   uniqueTiles.forEach(tile => {
     if (tile.style.display === 'none') {
       const priority = tile.style.getPropertyPriority('display');
-      if (priority !== 'important') {
-        tilesWithDisplayNone.push(tile);
-        tile.style.removeProperty('display');
-      }
+      tilesWithDisplayNone.push({ tile, priority });
+      tile.style.removeProperty('display');
     }
   });
 
   const offerData: OfferData[] = [];
 
   for (const tile of uniqueTiles) {
-    // Skip filtered tiles (favorites filter uses !important for display:none)
-    // Check both inline style priority and computed style
-    if (tile.style.display === 'none' && tile.style.getPropertyPriority('display') === 'important') {
-      continue;
-    }
-
-    const computedDisplay = window.getComputedStyle(tile).display;
-    if (computedDisplay === 'none') {
-      continue;
-    }
+    // Extract data from ALL tiles - don't skip any based on display state
+    // The favorites filter will be re-applied after table refresh
 
     const merchantName = extractMerchantName(tile);
     const mileage = extractMileageText(tile);
@@ -76,9 +67,9 @@ export function extractOfferData(): OfferData[] {
     });
   }
 
-  // Restore display:none to tiles that had it
-  tilesWithDisplayNone.forEach(tile => {
-    tile.style.display = 'none';
+  // Restore display:none to tiles that had it (with original priority)
+  tilesWithDisplayNone.forEach(({ tile, priority }) => {
+    tile.style.setProperty('display', 'none', priority);
   });
 
   // Sort by CSS order property to respect current sort
