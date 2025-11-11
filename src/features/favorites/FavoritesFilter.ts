@@ -64,7 +64,16 @@ export async function applyFavoritesFilter(
       } else {
         // Remove filter - show all tiles
         (tile as HTMLElement).style.removeProperty('display');
-        (tile as HTMLElement).style.removeProperty('grid-area');
+
+        // For grid-area: only remove if it was set to 'auto' by this filter
+        // Otherwise we'd destroy the original Capital One grid-area values
+        const currentGridArea = (tile as HTMLElement).style.gridArea;
+        const gridAreaPriority = (tile as HTMLElement).style.getPropertyPriority('grid-area');
+        if (currentGridArea === 'auto' && gridAreaPriority === 'important') {
+          // This was set by our filter - safe to remove
+          (tile as HTMLElement).style.removeProperty('grid-area');
+        }
+
         // Only remove order if it was set with !important by this filter
         const orderPriority = (tile as HTMLElement).style.getPropertyPriority('order');
         if (orderPriority === 'important') {

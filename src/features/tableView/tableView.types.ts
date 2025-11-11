@@ -20,6 +20,8 @@ export interface TileState {
     zIndex: string;
     display: string;
     displayPriority: string; // Store !important priority for display
+    gridArea: string; // Store grid-area for proper restoration
+    gridAreaPriority: string; // Store grid-area !important priority
   };
 }
 

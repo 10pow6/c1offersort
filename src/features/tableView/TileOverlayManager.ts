@@ -36,6 +36,8 @@ export function saveTileState(tile: HTMLElement): void {
       zIndex: tile.style.zIndex,
       display: tile.style.display,
       displayPriority: tile.style.getPropertyPriority('display'), // Save !important priority
+      gridArea: tile.style.gridArea,
+      gridAreaPriority: tile.style.getPropertyPriority('grid-area'), // Save grid-area priority
     },
   };
 
@@ -78,7 +80,26 @@ export function restoreTileState(tile: HTMLElement): void {
   tile.style.pointerEvents = originalStyles.pointerEvents;
   tile.style.zIndex = originalStyles.zIndex;
 
-  // Restore display with original priority (!important if it was set)
+  // Restore grid-area FIRST (Capital One uses this for layout)
+  // ALWAYS restore grid-area to original value, even if favorites filter set it to 'auto !important'
+  // This is crucial for proper grid layout when returning from table view
+  if (originalStyles.gridArea) {
+    tile.style.setProperty('grid-area', originalStyles.gridArea, originalStyles.gridAreaPriority);
+  } else {
+    tile.style.removeProperty('grid-area');
+  }
+
+  // Check current display property priority before restoring
+  const currentDisplayPriority = tile.style.getPropertyPriority('display');
+
+  // If display is currently set with !important, it's controlled by favorites filter
+  // Don't restore the original display value - let the filter manage it
+  if (currentDisplayPriority === 'important') {
+    // Skip restoring display - it's controlled by favorites filter
+    return;
+  }
+
+  // Otherwise, restore display with original priority
   if (originalStyles.display) {
     tile.style.setProperty('display', originalStyles.display, originalStyles.displayPriority);
   } else {
